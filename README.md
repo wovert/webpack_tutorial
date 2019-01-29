@@ -257,3 +257,33 @@ module.exports = {
   ]
 }
 ```
+
+## 使用 webpack 方式
+
+1. webpack 命令
+2. webpack 配置
+3. 第三方脚手架(vue-cli)
+
+
+``` sh
+$ webpack -h
+$ webpack -v
+$ webpack <entry> [<entry>] <output>
+```
+
+### webpack 配置
+
+```sh
+$ webpack
+$ webpack --config webpack.config.js
+```
+
+### webpack-cli
+
+- 交互式的初始化一个项目
+- 迁移项目 v1->v2
+- 不推荐使用
+
+```sh
+$ webapck-cli init webpack-addons-demo
+```
