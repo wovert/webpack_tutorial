@@ -541,3 +541,158 @@ $ webpack
 - 开发UI组件库
   - ES6的新方法，使用runtime
   - 开发框架给第三方使用，不希望污染全局变量
+
+## 编译 TypeScript
+
+> JS的超集
+
+- 官网： typescriptlang.org/tslang.cn
+- Microsoft
+
+### typescript-loader
+
+- 安装
+  - 官方：`npm i typescript ts-loader --save-dev`
+  - 第三方：`npm i typescript awesome-typescript-loader --save-dev` 缓存机制
+
+- 配置
+  - `tsconfig.json`
+
+- `webpack.config.js` 配置
+
+- 配置选项: 官网/docs/handbook/compiler-options.html
+- 常用选项：
+  - `compilerOptions`
+  - `include`
+  - `exclude`
+
+``` sh
+$ mkdir bundle_ts && cd bundle_ts
+$ npm init
+$ vim tsconfig.json
+  {
+    "compilerOptions": {
+      "module": "commonjs", // 包含ES6/7 和 commonjs
+      "target": "es5", // ts 编译成 es5
+      "allowJs": true, // js语法是否可以在ts文件中
+    },
+    
+    "include": [ // 编译哪些目录文件
+      "./src/*"
+    ],
+    
+    "exclude": [ // 不编译哪些目录
+      "./node_module"
+    ]
+  }
+$ npm i webpack typescript ts-loader awesome-typescript-loader --save-dev
+$ mkdir src
+$ vim webpack.config.js
+  module.exports = {
+    entry: {
+      app: './src/app.ts'
+    },
+
+    output: {
+      filename: '[name].bundle.js'
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/,
+          use: {
+            loader: 'ts-loader'
+          }
+        }
+      ]
+    }
+  }
+
+$ vim src/app.ts
+  const num = 45
+  interface Cat {
+    name: String
+    gender: String
+  }
+  function touchCat (cat: Cat) {
+    console.log('miao~', cat.name)
+  }
+  touchCat({
+    name: 'Tom',
+    gender: 'male'
+  })
+
+$ webpack
+
+ts中使用es函数
+$ npm i lodash --save
+$ vim app.ts
+  import * as _ from 'lodash'
+  console.log(_.chunk([1,2,3,4,5], 2))
+
+```
+
+`lodash`的所有函数都不会在原有的数据上进行操作，而是复制出一个新的数据而不改变原有数据。类似immutable.js的理念去处理。
+`lodash`是一套工具库，内部封装了很多字符串、数组、对象等常见数据类型的处理函数
+
+### 声明文件
+
+```sh
+$ npm i @types/loadash --save
+$ npm i @types/vue --save
+```
+
+出错的时候声明文件及时的反馈错误信息
+
+例如：
+``` sh
+$ vim app.ts
+  console.log(_.chunk(2))
+
+编辑之后没有任何信息反馈
+
+安装
+$ npm i @types/loadsh --save
+$ webpack
+
+提示编译错误: [tsl] ERROR in E:\lingyima\development\webpack_tutorial\bundle_ts\src\app.ts(3,21)
+      TS2345: Argument of type '2' is not assignable to parameter of type 'ArrayLike<{}>'.
+```
+
+### Typings
+
+全局安装 `npm i typings -g`
+
+项目中：`typings install lodash`
+
+``` sh
+$ npm uninstall @types/lodash --save
+$ npm i typings -g
+$ typings i lodash --save
+
+项目根目录生成 typings.json 文件和 typings目录
+
+$ vim app.ts
+  console.log(_.chunk(2))
+$ webpack
+  没有报错提示
+
+$ vim tsconfig.json
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "allowJs": true,
+    "typeRoots": [
+      "./node_modules/@type/",
+      "./typings/modules"
+    ]
+  }
+  ...
+$ webpack
+  提示类型错误
+
+```
+
+## 代码中提取公共的文件
+
