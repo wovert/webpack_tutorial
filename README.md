@@ -311,3 +311,125 @@ $ webpack --config webpack.conf.js
 $ webpack
 ```
 
+## ES6 打包
+
+### babel
+
+> Babel是一个广泛使用的转码器，可以将ES6代码转为ES5代码，从而在现有环境执行。
+
+``` js
+// 转码前
+input.map(item => item + 1)
+
+// 转码后
+input.map(function (item) {
+  return item + 1;
+});
+```
+
+- babel-loader
+- babeljs.io
+
+```sh
+$ cd bundle_es6
+$ npm init
+$ npm i babel-loader@8.0.0-beta.0 @babel/core -D
+
+或者不追求最新的babel
+$ npm install --save-dev babel-loader babel-core
+
+$ vim app.js
+$ vim index.html
+$ vim webpack.config.js
+```
+
+### babl-presets
+
+- es2015
+- es2016
+- es2017
+- env包括es2016-es2017和最新的latest
+  - babel-preset-react
+  - babel-preset-stage 0-3 没有正式发布的
+
+```sh
+与 $ npm i babel-loader@8.0.0-beta.0 @babel/core -D 匹配
+$ npm i @babel/preset-env --save-dev
+
+普通的babel-loader
+$ npm i babel-preset-env --save-dev
+```
+
+起始preset是loader的参数
+
+```js
+use: {
+  loader: 'babel-loader',
+  options: {
+    // 给babel-loader 指定presets
+    presets: [
+      '@babel/preset-env'
+    ]
+  }
+}
+```
+
+`targets`选项可以设置哪些语法可以编译，哪些语法不想编译
+
+- targets
+- targets.browsers
+  - targets.browers: "last 2 versions" 主流浏览器的最后两个版本支持
+  - targets.browers: ">1%" 大于全球1%的浏览器支持
+- browerslist 列表（数据来源于Can I use）
+- Can I use
+
+```js
+presets: [
+  ['@babel/preset-env', {
+    targets: {
+      browsers: ['> 1%', 'last 2 versions']
+    }
+  }]
+]
+```
+
+
+### 配置 .babelrc
+
+> Babel的配置文件`.babelrc`存放在**项目的根目录**下。使用Babel的第一步，就是配置这个文件。用来设置**转码规则**和**插件**
+
+```json
+{
+  "presets": [],
+  "plugins": []
+}
+```
+
+presets字段设定转码规则，官方提供以下的规则集，你可以根据需要安装。
+
+``` sh
+# ES2015转码规则
+$ npm install --save-dev babel-preset-es2015
+
+# react转码规则
+$ npm install --save-dev babel-preset-react
+
+# ES7不同阶段语法提案的转码规则（共有4个阶段），选装一个
+$ npm install --save-dev babel-preset-stage-0
+$ npm install --save-dev babel-preset-stage-1
+$ npm install --save-dev babel-preset-stage-2
+$ npm install --save-dev babel-preset-stage-3
+```
+
+然后，将这些规则加入`.babelrc`
+
+```json
+{
+  "presets": [
+    "es2015",
+    "react",
+    "stage-2"
+  ],
+  "plugins": []
+}
+```
