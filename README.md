@@ -264,7 +264,6 @@ module.exports = {
 2. webpack 配置
 3. 第三方脚手架(vue-cli)
 
-
 ``` sh
 $ webpack -h
 $ webpack -v
@@ -287,3 +286,28 @@ $ webpack --config webpack.config.js
 ```sh
 $ webapck-cli init webpack-addons-demo
 ```
+
+### 打包JS
+
+[打包JS源码](./bundle_js)
+
+1. 命令打包
+
+```sh
+$ webpack app.js bundle.js
+```
+AMD 异步生成单独的 0.bundle.js
+
+2. 配置文件打包
+
+```sh
+$ webpack --config webpack.conf.js
+```
+
+3. 配置文件打包 - webpack.conf.js 文件修改为 webpack.config.js
+
+```sh
+# webpack 自动查找webpacki.config.js 文件作为配置文件执行打包
+$ webpack
+```
+
