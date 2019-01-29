@@ -393,7 +393,6 @@ presets: [
 ]
 ```
 
-
 ### 配置 .babelrc
 
 > Babel的配置文件`.babelrc`存放在**项目的根目录**下。使用Babel的第一步，就是配置这个文件。用来设置**转码规则**和**插件**
@@ -433,3 +432,112 @@ $ npm install --save-dev babel-preset-stage-3
   "plugins": []
 }
 ```
+
+babel-preset：针对语法编译
+
+函数和方法？babel-polyfill 和 babel-runtime-transform
+
+### 函数和方法
+
+- Generator
+- Set
+- Map
+- Array.from
+- Array.prototype.includes
+
+- **Babel polyfill** 垫片（在各种浏览器保持同样的APi）
+  - 全局垫片
+  - 为应用准备，不是为框架准备
+  - 使用方法
+    - `npm install babel-polyfill --save`
+    - `import "babel-polyfill"`
+- **Babel Runtime Transform**
+  - 局部垫片
+  - 为开发框架准备
+  - 使用方法
+    - `npm i babel-plugin-transform-runtime --save-dev` 或者 `npm i @babel/plugin-transform-runtime --save-dev`
+    - `npm i babel-runtime --save` 或者 `npm i @babel/runtime --save` 最新版本
+
+``` sh
+$ npm i babel-polyfill babel-runtime --save
+$ npm i babel-plugin-transform-runtime --save-dev
+$ vim app.js
+
+  import 'babel-polyfill'
+
+  let func = () => {}
+  const NUM = 46
+  let arr = [1,2,3]
+  let arr2 = arr.map(item => item * 2)
+
+  // 低版本浏览器不支持
+  arr.includes(8)
+  console.log('new Set(arr2)', new Set(arr2))
+
+  function* func() {}
+
+$ webpack
+            Asset    Size  Chunks                    Chunk Names
+  app.2efcebe9.js  291 kB       0  [emitted]  [big]  app
+    [93] (webpack)/buildin/global.js 910 bytes {0} [built]
+  [130] ./app.js 554 bytes {0} [built]
+  [329] (webpack)/buildin/module.js 567 bytes {0} [built]
+      + 330 hidden modules
+
+  打包生成的文件比较大，因为文件中包含了polyfill（所有的polyfill都在全局作用域下）
+
+```
+
+使用runtime
+
+``` sh
+$ vim .babelrc
+  {
+    "presets": [
+      ["@babel/preset-env", {
+        "targets": {
+          "browsers": ["> 1%", "last 2 versions"]
+          //chrome: '52'
+        }
+      }]
+    ],
+    "plugins": ["transform-runtime"]
+  }
+
+注释options
+$ vim webpack.config.js
+  use: {
+    loader: 'babel-loader',
+    // options: {
+    //   // 给babel-loader 指定presets
+    //   presets: [
+    //     ['@babel/preset-env', {
+    //       targets: {
+    //         browsers: ['> 1%', 'last 2 versions']
+    //         //chrome: '52'
+    //       }
+    //     }]
+    //   ]
+    // }
+  },
+
+$ webpack
+
+Module build failed: TypeError: this.setDynamic is not a function
+
+$ cnpm i @babel/runtime --save
+$ cnpm i @babel/plugin-transform-runtime --save-dev
+
+$ vim .babelrc
+  "plugins": ["@babel/transform-runtime"]
+$ webpack
+```
+
+### 总结: polyfill和runtime
+
+- 应用开发
+  - `.babelrc` 配置 `presets`
+  - ES6方法和函数 `import babel-polyfill`
+- 开发UI组件库
+  - ES6的新方法，使用runtime
+  - 开发框架给第三方使用，不希望污染全局变量
