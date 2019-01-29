@@ -694,5 +694,270 @@ $ webpack
 
 ```
 
-## 代码中提取公共的文件
+## 提取公共代码
 
+- 减少代码冗余
+- 提高加载速度
+
+![图例](./images/get_common.png)
+
+CommonsChunkPlugin 插件
+
+webpack.optimize.CommonsChunkPlugin
+
+### 配置
+
+``` sh
+$ vim webpack.config.js
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin(option)
+  ]
+```
+
+- options
+  - options.name or options.names
+  - options.filename 公用代码打包之后的文件名
+  - options.minChunks 数字的时候，最少是多少；自定义提取逻辑
+  - options.chunks 提取代码范围
+  - options.children
+  - options.deepChildren
+  - options.async 异步代码块
+
+### 场景
+
+- 单页应用
+- 单页应用 + 第三方依赖
+- 多页引用 + 第三方依赖 + webpack 生成代码
+
+```sh
+$ npm init
+
+本地安装: 因为commonchunk是 webpack自带的，所以安装在本地。需要在配置文件中局部依赖， require依赖webpack。
+$ npm i webpack --save-dev
+$ mkdir src && cd src
+$ touch page_a.js sub_page_a.js sub_page_b.js module_common.js
+
+- page_a
+  - sub_page_a
+- sub_page_a
+  - module_common
+- sub_page_b
+  - module_common
+
+$ vim webpack.config.js
+$ webpack
+
+common.bundle.js webpack自己生成的代码
+pageA.bundle.js 打包的文件代码
+没有抽离出公用代码 common_bundle.js
+
+如何抽离出来公共代码？ 单个entry 不会抽离公用代码
+
+$ vim webpack.config.js
+
+var webpack = require('webpack')
+var path = require('path')
+
+module.exports = {
+  entry: {
+    'pageA': './src/page_a',
+    'pageB': './src/page_b'
+  },
+
+  output: {
+    path: path.resolve(__dirname, './dist'),
+    filename: '[name].bundle.js',
+    chunkFilename: '[name].chunk.js'
+  },
+
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'common',
+      minChunks: 2 // 重复模块大于等于2的全部抽出来
+    })
+  ]
+}
+
+$ webpack
+
+common.bundle.js 包含了 module_common/sub_page_a/sub_page_b代码
+
+
+安装第三方包并在page_a.js和page_b.js文件中引入lodash包 `import * as _ from 'lodash'`
+
+
+$ npm i lodash --save
+
+lodash和上面common.bundle.js打包在一起
+$ vim webpack.config.js
+var webpack = require('webpack')
+var path = require('path')
+
+module.exports = {
+  entry: {
+    'pageA': './src/page_a',
+    'pageB': './src/page_b',
+    'vendor': ['lodash']
+  },
+
+  output: {
+    path: path.resolve(__dirname, './dist'),
+    filename: '[name].bundle.js',
+    chunkFilename: '[name].chunk.js'
+  },
+
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor',
+      minChunks: Infinity  // 不需要其他模块去查找公用代码
+    })
+  ]
+}
+
+
+
+pageB.bundle.js   1.5 kB       0  [emitted]         pageB
+pageA.bundle.js  1.47 kB       1  [emitted]         pageA
+vendor.bundle.js   546 kB       2  [emitted]  [big]  vendor
+
+vendor.bundle.js 包含了 lodash 代码
+
+
+
+
+第三方代码独立处理文件
+$ vim webpack.config.js
+
+var webpack = require('webpack')
+var path = require('path')
+
+module.exports = {
+  entry: {
+    'pageA': './src/page_a',
+    'pageB': './src/page_b',
+    'vendor': ['lodash']
+  },
+
+  output: {
+    path: path.resolve(__dirname, './dist'),
+    filename: '[name].bundle.js',
+    chunkFilename: '[name].chunk.js'
+  },
+
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor',
+      minChunks: Infinity  // 不需要其他模块去查找公用代码
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest', // webpack 独立出来
+      minChunks: Infinity
+    }),
+  ]
+}
+
+$ webpack
+             Asset     Size  Chunks                    Chunk Names
+   pageB.bundle.js   1.5 kB       0  [emitted]         pageB
+   pageA.bundle.js  1.47 kB       1  [emitted]         pageA
+  vendor.bundle.js   542 kB       2  [emitted]  [big]  vendor     lodash文件
+manifest.bundle.js  3.84 kB       3  [emitted]         manifest   webpack文件
+
+
+
+模块独立出来文件
+$ vim webpack.config.js
+var webpack = require('webpack')
+var path = require('path')
+
+module.exports = {
+  entry: {
+    'pageA': './src/page_a',
+    'pageB': './src/page_b',
+    'vendor': ['lodash']
+  },
+
+  output: {
+    path: path.resolve(__dirname, './dist'),
+    filename: '[name].bundle.js',
+    chunkFilename: '[name].chunk.js'
+  },
+
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'common', // 公共部分提取出来
+      minChunks: 2
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor',
+      minChunks: Infinity  // 不需要其他模块去查找公用代码
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest', // webpack 独立出来
+      minChunks: Infinity
+    }),
+  ]
+}
+
+ERROR in CommonsChunkPlugin: While running in normal mode it's not allowed to use a non-entry chunk (vendor)
+
+指定范围查找
+$ vim webpack.config.js
+  ...
+  name: 'common',
+  minChunks: 2,
+  chunks: ['page_a','page_b']
+  ...
+
+$ webpack
+
+vendor.bundle.js     542 kB       0  [emitted]  [big]  vendor
+  common.bundle.js  797 bytes       1  [emitted]         common
+   pageB.bundle.js  695 bytes       2  [emitted]         pageB
+   pageA.bundle.js  695 bytes       3  [emitted]         pageA
+manifest.bundle.js    3.84 kB       4  [emitted]         manifest
+
+
+简写代码
+$ vim webpack.config.js
+    new webpack.optimize.CommonsChunkPlugin({
+      names: ['vendor', 'manifest'],
+      minChunks: Infinity  // 不需要其他模块去查找公用代码
+    })
+
+$ webpack
+
+```
+
+webpack4带来的最大优化便是对于**懒加载块拆分的优化**，删除了**CommonsChunkPlugin**，新增了优化后的**SplitChunksPlugin**，那么CommonsChunkPlugin的痛点在哪？SplitChunksPlugin的优化又是在哪？
+
+1. CommonsChunkPlugin的痛
+
+记得17年始，我刚开始用webpack搭建一个vue的单页应用框架时，我陆续的抛出了几个问题：
+
+- 如何避免单页应用首次的**入口文件过大**？ 这个问题处理起来倒简单，webpack支持import()语法实现模块的懒加载，可以做到随用随载，也就是**除了首页**要用到文件，其他模块使用**懒加载**就能有效的避免入口文件过大
+
+- 入口模块以及剩下的懒加载模块**引用公用的模块**时，代码会重复吗？webpack会处理吗？怎么处理？
+  - 代码重复是肯定的，如果父级模块中没有引入懒加载模块的共用模块，那么懒加载各模块间就会出现代码重复；
+  - webpack能处理，那么怎么处理呢？这时`CommonsChunkPlugin`就信誓旦旦地登场了，它能够将全部的**懒加载模块**引入的**共用模块统一抽取出来**，形成一个**新的common块**，这样就避免了懒加载模块间的代码重复了。 但是，把共用的东西都抽出来了，这样又造成了**入口文件过大**了。以下是`CommonsChunkPlugin`时代常用的配置
+
+```
+new webpack.optimize.CommonsChunkPlugin({
+  name: 'vendor',
+  // 引入node_modules的依赖全抽出来
+  minChunks: function (module, count) {
+    // any required modules inside node_modules are extracted to vendor
+    return (
+      module.resource &&
+      /\.js$/.test(module.resource) &&
+      module.resource.indexOf(
+        path.join(__dirname, '../node_modules')
+      ) === 0
+    )
+  }
+  // 或者直接minChunks: 2，重复模块大于2的全部抽出来
+}),
+```
+
+总之你在**代码重复**与**入口文件控制**方面你得做个平衡，而这个平衡挺不利于多人开发的，也**不易于优化**
+`CommonsChunkPlugin`的痛，痛在只能**统一抽取模块到父模块**，造成**父模块过大**，**不易于优化**
