@@ -1,0 +1,12 @@
+@baseColor: #f938ab;
+
+html {
+  background: @baseColor;
+}
+.box {
+  composes: bigBox from './common.less';
+  width: 200px;
+  height: 200px;
+  border-radius: 4px solid @baseColor;
+  background: #333;
+}

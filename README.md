@@ -1727,4 +1727,176 @@ $ webpack
 <div id="app"><div class="src-css-base_box_REzyU src-css-common_bigBox_27sNb"></div></div>
 ```
 
+### 配置 less/sass
+
+[配置 Less/Sass/Stylus](./less_sass_stylus)
+
+```sh
+$ npm i less-loader less --save-dev
+$ npm i sass-loader node-sass --save-dev
+```
+
+### 提取 CSS
+
+- 提取CSS方式
+  - 1. extract-loader
+  - 2. ExtractTextWebpackPlugin
+
+``` sh
+$ npm i extract-text-webpack-plugin webpack@3.12.0 --save-dev
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js'
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }            
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                  // camelCase: false, //导出以驼峰化命名的类名, 默认false
+                  // import: true, //禁止或启用@import, 默认true
+                  // url: true, //禁止或启用url, 默认true
+                  // sourceMap: false, //禁止或启用sourceMap, 默认false
+                  // importLoaders: 0, //在css-loader前应用的loader的数目, 默认为0
+                  // alias: {} //起别名, 默认{}
+                }
+                // loader: 'file-loader'
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css' // 打包之后的名字
+      })
+    ]
+  }
+$ webpack
+
+        Asset       Size  Chunks             Chunk Names
+app.bundle.js    3.78 kB       0  [emitted]  app
+  app.min.css  263 bytes       0  [emitted]  app
+
+index.html 手动引入app.min.css
+$ index.html
+  <link rel="stylesheet" href="./dist/app.min.css">
+
+```
+
+
+**初始加载和动态加载分开**
+
+```sh
+$ mkdir src/components
+$ vim src/compoennts/a.less
+  .a {
+    font-size: 14px;
+    color: #999;
+  }
+$ vim src/app.js
+  import base from './css/base.less'
+  import common from './css/common.less'
+
+
+  var app = document.getElementById('app')
+  app.innerHTML = '<div class="'+base.box+'"></div>'
+
+  // 动态异步加载
+  import(/* webpackChunkName:'a' */'./components/a').then(function (a) {
+    console.log(a)
+  })
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  // minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+          })
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      })
+    ]
+  }
+$ webpack
+
+        Asset       Size  Chunks             Chunk Names
+  a.bundle.js    2.08 kB       0  [emitted]  a
+app.bundle.js    23.4 kB       1  [emitted]  app
+  app.min.css  328 bytes       1  [emitted]  app
+
+初始加载CSS：app.min.css
+动态加载CSS：a.bundle.js
+```
 
