@@ -961,3 +961,263 @@ new webpack.optimize.CommonsChunkPlugin({
 
 总之你在**代码重复**与**入口文件控制**方面你得做个平衡，而这个平衡挺不利于多人开发的，也**不易于优化**
 `CommonsChunkPlugin`的痛，痛在只能**统一抽取模块到父模块**，造成**父模块过大**，**不易于优化**
+
+## 代码分割 和 懒加载
+
+用户**短的时间**内下载**浏览页面**
+
+- 实现方式
+  - 1. webpack内置 methods
+  - 2. ES 2015 Loader spec
+
+### webpack methods
+
+- `require.ensure` 接受四个参数
+  - `[]: dependencies`
+  - `callback`
+  - `errorCallback`
+  - `chunkName`
+- `require.include` 当两个字模块依赖第三方模块时，可以把第三方模块放到父模块。动态加载子模块的时候，已经有了第三方模块，不用多余加载第三方模块。
+- 浏览器不支持`promise`, 必须依赖`polyfill`
+
+### ES 2015 Loader Spec
+
+- `System.import() -> import()`
+- `import() -> Promise`
+- `import().then()`
+
+webpack import function
+
+import(
+  /*webpackChunkName:async-chunk-name*/
+  /*webpackMode:lazy*/
+  modulename
+)
+
+### 代码分割应用场景
+
+- 分离业务代码 和 第三方依赖
+- 分离业务代码 和 业务公共代码 和 第三方依赖
+- 分离首次加载 和 访问后加载的代码（首屏速度）
+
+- 案例：
+  - page_a 依赖 模块 **sub_page_a, sub_page_b, 第三方依赖 lodash**
+  - sub_page_a 和 sub_page_b 依赖模块 **module_common**
+
+```sh
+$ vim webpack.config.js
+  var webpack = require('webpack')
+  var path = require('path')
+  module.exports = {
+    entry: {
+      'pageA': './src/page_a'
+    },
+    output: {
+      path: path.resolve(__dirname, './dist'),
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].chunk.js'
+    }
+  }
+
+$ webpack
+
+pageA.bundle.js  545 kB       0  [emitted]  [big]  pageA
+因为没有做任何的代码分割，所以都打包在一起
+```
+
+**第三方依赖与业务分割**
+
+```sh
+$ vim page_a.js
+  import './sub_page_a'
+  import './sub_page_b'
+  // import * as _ from 'lodash'
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+  export default 'pageA'
+
+$ webpack
+  vendor.chunk.js   541 kB       0  [emitted]  [big]  vendor
+  pageA.bundle.js  7.26 kB       1  [emitted]         pageA
+
+  lodash提取到vendor.chunk.js 文件中
+```
+
+**分割自定义模块**
+
+```sh
+$ vim page_a.js
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    require.ensure(['./sub_page_a'], function () {
+      var subPageA = require('./sub_page_a')
+    }, 'subPageA')
+  } else if (page === 'subPageB') {
+    require.ensure(['./sub_page_b'], function () {
+      var subPageB = require('./sub_page_b')
+    }, 'subPageB')
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+
+$ webpack
+          Asset       Size  Chunks                    Chunk Names
+  vendor.chunk.js     541 kB       0  [emitted]  [big]  vendor
+subPageB.chunk.js  592 bytes       1  [emitted]         subPageB
+subPageA.chunk.js  592 bytes       2  [emitted]         subPageA
+  pageA.bundle.js    6.79 kB       3  [emitted]         pageA
+
+subPageA.chunk.js 是分割 sub_page_a 模块代码
+subPageB.chunk.js 是分割 sub_page_b 模块代码
+
+但是 subPageA.chunk.js 和 subPageB.chunk.js 的都包含了module_common模块。sub_page_a和sub_page_b的公用模块没有提取出单独的文件。
+
+"use strict";
+/* unused harmony default export */ var _unused_webpack_default_export = ('moduleCommon');
+
+```
+
+**提取多个动态模块之间公用模块到父模块中**
+
+```sh
+$ vim page_a.js
+  // sub_page_a和sub_page_b的公用模块提取到父模块中
+  require.include('./module_common')
+
+
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    require.ensure(['./sub_page_a'], function () {
+      var subPageA = require('./sub_page_a')
+    }, 'subPageA')
+  } else if (page === 'subPageB') {
+    require.ensure(['./sub_page_b'], function () {
+      var subPageB = require('./sub_page_b')
+    }, 'subPageB')
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+
+$ webpack
+           Asset       Size  Chunks                    Chunk Names
+  vendor.chunk.js     541 kB       0  [emitted]  [big]  vendor
+subPageB.chunk.js  375 bytes       1  [emitted]         subPageB
+subPageA.chunk.js  381 bytes       2  [emitted]         subPageA
+  pageA.bundle.js    7.09 kB       3  [emitted]         pageA
+
+module_common 模块提取到pageA.bundle.js 文件中，subPageA.chunk.js和subPageB.chunk.js 文件中已经不存在module_common模块代码
+```
+
+在页面中查看加载关系
+``` sh
+$ vim src/page_a.js
+  var page = 'subPageA'
+  ...
+$ vim index.html
+  <script src="./dist/pageA.bundle.js"></script>
+
+$ vim webpack.config.js
+  output: {
+    publicPath: './dist/', // 动态加载的路径, 打包之后的应该是CDN地址
+  },
+$ webpack
+浏览器查看加载顺序为:
+index.html
+pageA.bundle.js
+subPageA.chunk.js
+vendor.chunk.js
+```
+
+测试动态加载，但不运行代码
+``` sh
+$ vim page_a.js
+  // sub_page_a和sub_page_b的公用模块提取到父模块中
+  require.include('./module_common')
+
+  var page = 'subPageA'
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    require.ensure(['./sub_page_a'], function () {
+      // var subPageA = require('./sub_page_a')
+    }, 'subPageA')
+  } else if (page === 'subPageB') {
+    require.ensure(['./sub_page_b'], function () {
+      // var subPageB = require('./sub_page_b')
+    }, 'subPageB')
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+
+$ vim sub_page_a.js
+  import './module_common'
+  console.log('this is subPageA')
+  export default 'subPageA'
+$ webpack
+浏览器观察并没有执行console.log('this is subPageA')
+```
+
+**动态加载并运行代码** []异步加载运行
+
+``` sh
+$ vim page_a.js
+  // sub_page_a和sub_page_b的公用模块提取到父模块中
+  require.include('./module_common')
+
+  var page = 'subPageB'
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    require.ensure([], function () {
+      var subPageA = require('./sub_page_a')
+    }, 'subPageA')
+  } else if (page === 'subPageB') {
+    require.ensure([], function () {
+      var subPageB = require('./sub_page_b')
+    }, 'subPageB')
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+```
+
+**webpack3 支持动态 import**
+
+``` sh
+```
