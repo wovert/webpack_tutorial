@@ -4,8 +4,8 @@ var path = require('path')
 module.exports = {
   entry: {
     'pageA': './src/page_a',
-    // 'pageB': './src/page_b',
-    // 'vendor': ['lodash']
+    'pageB': './src/page_b',
+    'vendor': ['lodash']
   },
 
   output: {
@@ -15,15 +15,17 @@ module.exports = {
     chunkFilename: '[name].chunk.js'
   },
 
-  // plugins: [
-  //   new webpack.optimize.CommonsChunkPlugin({
-  //     name: 'common', // 公共部分提取出来
-  //     minChunks: 2,
-  //     chunks: ['pageA','pageB'] // 打包出来的文件中抽离公用代码
-  //   }),
-  //   new webpack.optimize.CommonsChunkPlugin({
-  //     names: ['vendor', 'manifest'],
-  //     minChunks: Infinity  // 不需要其他模块去查找公用代码
-  //   })
-  // ]
+  plugins: [
+
+    // 异步加载
+    new webpack.optimize.CommonsChunkPlugin({
+      async: 'async-common', // 公共部分提取出来
+      children: true, // page_a和page_b的共同，而是两个页面子依赖
+      minChunks: 2
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      names: ['vendor', 'manifest'],
+      minChunks: Infinity
+    })
+  ]
 }

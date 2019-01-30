@@ -1220,4 +1220,182 @@ $ vim page_a.js
 **webpack3 支持动态 import**
 
 ``` sh
+$ vim page_a.js
+  // sub_page_a和sub_page_b的公用模块提取到父模块中
+  require.include('./module_common')
+
+  var page = 'subPageB'
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    // require.ensure([], function () {
+    //   var subPageA = require('./sub_page_a')
+    // }, 'subPageA')
+    import('./sub_page_a').then(function (subPageA) {
+      console.log(subPageA)
+    })
+    
+  } else if (page === 'subPageB') {
+    // require.ensure([], function () {
+    //   var subPageB = require('./sub_page_b')
+    // }, 'subPageB')
+    import('./sub_page_b').then(function (subPageB) {
+      console.log(subPageB)
+    })
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+$ webpack
+
+   Asset       Size  Chunks                    Chunk Names
+vendor.chunk.js     541 kB       0  [emitted]  [big]  vendor
+     1.chunk.js  408 bytes       1  [emitted]
+     2.chunk.js  408 bytes       2  [emitted]
+pageA.bundle.js    7.21 kB       3  [emitted]         pageA
+
+sub_page_a和sub_page_b没有chunkname
+
+浏览器执行结果：
+this is subPageB
+pageA.bundle.js:179 {default: "subPageB", __esModule: true}
+
 ```
+
+**指定chunkname**
+
+```sh
+$ vim page_a.js
+  // sub_page_a和sub_page_b的公用模块提取到父模块中
+  require.include('./module_common')
+
+  var page = 'subPageB'
+  // 根据页面不同动态加载不同模块
+  if (page === 'subPageA') {
+    // require.ensure([], function () {
+    //   var subPageA = require('./sub_page_a')
+    // }, 'subPageA')
+    import(/* webpackChunkName:'subPageA' */'./sub_page_a').then(function (subPageA) {
+      console.log(subPageA)
+    })
+  } else if (page === 'subPageB') {
+    // require.ensure([], function () {
+    //   var subPageB = require('./sub_page_b')
+    // }, 'subPageB')
+    import(/* webpackChunkName:'subPageA' */'./sub_page_b').then(function (subPageB) {
+      console.log(subPageB)
+    })
+  }
+
+  // import * as _ from 'lodash'
+
+  // 动态加载模块
+  // require.ensure只会加载代码并不会执行, []异步加载， commonjs加载['lodash']
+  require.ensure([], function () {
+    var _ = require('lodash') // 这行代码会执行lodash
+    _.join(['1', '2'], '3')
+  }, 'vendor') // chunk名称vendor
+
+  export default 'pageA'
+$ webpack
+
+            Asset       Size  Chunks                    Chunk Names
+subPageA.chunk.js  807 bytes       0  [emitted]         subPageA
+  vendor.chunk.js     541 kB       1  [emitted]  [big]  vendor
+  pageA.bundle.js    7.22 kB       2  [emitted]         pageA
+
+subPageA里包含了sub_page_a和sub_page_b
+```
+
+**module_common异步加载**
+
+```sh
+$ vim page_a.js
+  // 同步加载lodash
+  import * as _ from 'lodash'
+
+  var page = 'subPageA'
+  if (page === 'subPageA') {
+    import(/* webpackChunkName:'subPageA' */'./sub_page_a')
+      .then(function (subPageA) {
+        console.log(subPageA)
+      })
+  } else if (page === 'subPageB') {
+    import(/* webpackChunkName:'subPageB' */'./sub_page_b').
+      then(function (subPageB) {
+        console.log(subPageB)
+      })
+  }
+  export default 'pageA'
+
+$ vim page_b.js
+  // 同步加载lodash
+  import * as _ from 'lodash'
+
+  var page = 'subPageB'
+  if (page === 'subPageA') {
+    import(/* webpackChunkName:'subPageA' */'./sub_page_a')
+      .then(function (subPageA) {
+        console.log(subPageA)
+      })
+  } else if (page === 'subPageB') {
+    import(/* webpackChunkName:'subPageB' */'./sub_page_b').
+      then(function (subPageB) {
+        console.log(subPageB)
+      })
+  }
+  export default 'pageB'
+
+$ webpack.config.js
+  var webpack = require('webpack')
+  var path = require('path')
+
+  module.exports = {
+    entry: {
+      'pageA': './src/page_a',
+      'pageB': './src/page_b',
+      'vendor': ['lodash']
+    },
+
+    output: {
+      path: path.resolve(__dirname, './dist'),
+      publicPath: './dist/', // 动态加载的路径, 打包之后的应该是CDN地址
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].chunk.js'
+    },
+
+    plugins: [
+
+      // 异步加载
+      new webpack.optimize.CommonsChunkPlugin({
+        async: 'async-common', // 公共部分提取出来
+        children: true, // page_a和page_b的公用，而是两个页面子依赖
+        minChunks: 2
+      }),
+      new webpack.optimize.CommonsChunkPlugin({
+        names: ['vendor', 'manifest'],
+        minChunks: Infinity
+      })
+    ]
+  }
+
+$ webpack
+                      Asset       Size  Chunks                    Chunk Names
+          subPageB.chunk.js  408 bytes       0  [emitted]         subPageB
+          subPageA.chunk.js  414 bytes       1  [emitted]         subPageA
+async-common-pageA.chunk.js  217 bytes       2  [emitted]         async-common-pageA
+           vendor.bundle.js     542 kB       3  [emitted]  [big]  vendor
+            pageB.bundle.js    1.02 kB       4  [emitted]         pageB
+            pageA.bundle.js    1.53 kB       5  [emitted]         pageA
+         manifest.bundle.js    5.86 kB       6  [emitted]         manifest
+
+async-common-pageA.chunk.js里包含module_common模块代码
+```
+
