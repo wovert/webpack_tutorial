@@ -24,7 +24,18 @@ module.exports = {
             }
           },
           {
-            loader: 'css-loader'
+            loader: 'css-loader',
+            options: {
+              minimize: true, //压缩css代码, 默认false
+              // modules: false, //开启css-modules模式, 默认值为flase
+              // localIdentName: '[name]-[local]-[hash:base64:5]', //设置css-modules模式下local类名的命名
+              // camelCase: false, //导出以驼峰化命名的类名, 默认false
+              // import: true, //禁止或启用@import, 默认true
+              // url: true, //禁止或启用url, 默认true
+              // sourceMap: false, //禁止或启用sourceMap, 默认false
+              // importLoaders: 0, //在css-loader前应用的loader的数目, 默认为0
+              // alias: {} //起别名, 默认{}
+            }
             // loader: 'file-loader'
           }
         ]

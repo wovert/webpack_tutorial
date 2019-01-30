@@ -1619,3 +1619,27 @@ $ webpack
 ```
 
 结果：**刷新**之后根据浏览器大小显示不同的背景色
+
+### css-loader
+
+- options
+  - alias(解析的别名)
+  - importLoader( @import )
+  - minimize(是否压缩)
+  - modules(启用css-modules)
+
+- :local 本地样式
+- :global 全局样式
+- compose
+- compose ... from path
+
+``` sh
+$ vim webpack.config.js
+  {
+    loader: 'css-loader',
+    options: {
+      minimize: true, // 压缩style
+    }
+  }
+注意：css-loader 版本 "css-loader": "^0.28.11" 支持minimize
+```
