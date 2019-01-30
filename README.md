@@ -1509,6 +1509,113 @@ module.exports = {
     ]
   }
 }
-
-
 ```
+
+- options
+  - insertAt(插入位置)
+  - insertInto(插入到DOM)
+  - singleton(是否只使用一个style标签)
+  - transform(转化，浏览器环境下，插入页面前)
+
+``` sh
+$ vim webpack.config.js
+var path = require('path')
+module.exports = {
+  entry: {
+    app: './src/app.js'
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: './dist/',
+    filename: '[name].bundle.js'
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          {
+            loader: 'style-loader',
+            options: {
+              insertInto: '#app' // style插入到#app元素下
+            }
+          },
+          {
+            loader: 'css-loader'
+            // loader: 'file-loader'
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+结果：在#app元素内有2个style标签
+
+**合并成一个style标签**
+
+```sh
+$ vim webpack.config.js
+  options: {
+    insertInto: '#app', // style插入到#app元素下
+    singleton: true // 仅显示一个style标签
+  }
+```
+结果：在#app元素内有1个style标签
+
+**transform用法**
+
+``` sh
+$ vim webpack.config.js
+  var path = require('path')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js'
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.css$/,
+          use: [
+            {
+              loader: 'style-loader',
+              options: {
+                insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }
+            },
+            {
+              loader: 'css-loader'
+              // loader: 'file-loader'
+            }
+          ]
+        }
+      ]
+    }
+  }
+$ vim css.transform.js
+  module.exports = function (css) {
+    // 并不是打包的时候执行,而是在style嵌入到HTML的时候执行
+    console.log(css)
+    console.log(window.innerWidth)
+    if (window.innerWidth >= 768) {
+      return css.replace('red', 'green')
+    } else {
+      return css.replace('red', 'orange')
+    }
+  }
+$ webpack
+```
+
+结果：**刷新**之后根据浏览器大小显示不同的背景色
