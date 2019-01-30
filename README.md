@@ -1399,3 +1399,116 @@ async-common-pageA.chunk.js  217 bytes       2  [emitted]         async-common-p
 async-common-pageA.chunk.js里包含module_common模块代码
 ```
 
+## 处理CSS
+
+- 引入CSS
+- CSS modules
+- 配置 less/sass/stylus
+- 提取 CSS 代码
+
+### 引入CSS
+
+- style-loader 创建style标签
+  - style-loader/url
+  - style-loader/useable
+- css-loader js导入css功能
+
+```sh
+$ npm i style-loader css-loader file-loader -D
+```
+
+**使用 style-loader/url方法**
+
+``` sh
+$ vim src/app.js
+  import './css/base.css'
+  import './css/common.css'
+$ vim webpack.config.js
+  var path = require('path')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js'
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.css$/,
+          use: [
+            {
+              loader: 'style-loader/url'
+            },
+            {
+              // loader: 'css-loader'
+              loader: 'file-loader'
+            }
+          ]
+        }
+      ]
+    }
+  }
+$ webpack
+
+link引入方式使用样式。
+缺点：更多网络请求样式文件
+```
+
+**style-loader/useable**
+
+``` sh
+$ vim src/app.js
+  import base from './css/base.css'
+  import common from './css/common.css'
+
+  // base.use()
+  // common.unuse()
+
+  var flag = false
+
+  setInterval(function () {
+    if (flag) {
+      base.unuse()
+    } else {
+      base.use()
+    }
+    flag = !flag
+  }, 500)
+$ vim webpack.config.js
+var path = require('path')
+module.exports = {
+  entry: {
+    app: './src/app.js'
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: './dist/',
+    filename: '[name].bundle.js'
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          {
+            loader: 'style-loader/useable'
+          },
+          {
+            loader: 'css-loader'
+            // loader: 'file-loader'
+          }
+        ]
+      }
+    ]
+  }
+}
+
+
+```
