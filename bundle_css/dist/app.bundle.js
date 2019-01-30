@@ -60,11 +60,27 @@
 /******/ 	__webpack_require__.p = "./dist/";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(1)(false);
+// imports
+
+
+// module
+exports.push([module.i, "body{font-size:40px}.src-css-common_bigBox_27sNb{border:2px solid #ccc}", ""]);
+
+// exports
+exports.locals = {
+	"bigBox": "src-css-common_bigBox_27sNb"
+};
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports) {
 
 /*
@@ -146,7 +162,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports) {
 
 module.exports = function (css) {
@@ -161,7 +177,7 @@ module.exports = function (css) {
 }
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -230,7 +246,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(6);
+var	fixUrls = __webpack_require__(7);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -567,17 +583,20 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__css_base_css__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__css_base_css__ = __webpack_require__(5);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__css_base_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__css_base_css__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__css_common_css__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__css_common_css__ = __webpack_require__(8);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__css_common_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__css_common_css__);
 
 
+
+var app = document.getElementById('app')
+app.innerHTML = '<div class="'+__WEBPACK_IMPORTED_MODULE_0__css_base_css___default.a.box+'"></div>'
 
 // base.use()
 // common.unuse()
@@ -594,25 +613,25 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 // }, 500)
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(5);
+var content = __webpack_require__(6);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
 var transform;
 var insertInto;
 
-transform = __webpack_require__(1);
+transform = __webpack_require__(2);
 
-var options = {"insertInto":"#app","singleton":true,"transform":"./css.transform.js","hmr":true}
+var options = {"singleton":true,"transform":"./css.transform.js","hmr":true}
 
 options.transform = transform
-options.insertInto = "#app";
+options.insertInto = undefined;
 
-var update = __webpack_require__(2)(content, options);
+var update = __webpack_require__(3)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -644,21 +663,23 @@ if(false) {
 }
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(0)(false);
+exports = module.exports = __webpack_require__(1)(false);
 // imports
-
+exports.i(__webpack_require__(0), undefined);
 
 // module
-exports.push([module.i, "html{background:red}", ""]);
+exports.push([module.i, "html{background:red}.src-css-base_box_REzyU{width:200px;height:200px;border-radius:4px solid red;background:#333}", ""]);
 
 // exports
-
+exports.locals = {
+	"box": "src-css-base_box_REzyU " + __webpack_require__(0).locals["bigBox"] + ""
+};
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 
@@ -753,25 +774,25 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(8);
+var content = __webpack_require__(0);
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 
 var transform;
 var insertInto;
 
-transform = __webpack_require__(1);
+transform = __webpack_require__(2);
 
-var options = {"insertInto":"#app","singleton":true,"transform":"./css.transform.js","hmr":true}
+var options = {"singleton":true,"transform":"./css.transform.js","hmr":true}
 
 options.transform = transform
-options.insertInto = "#app";
+options.insertInto = undefined;
 
-var update = __webpack_require__(2)(content, options);
+var update = __webpack_require__(3)(content, options);
 
 if(content.locals) module.exports = content.locals;
 
@@ -801,20 +822,6 @@ if(false) {
 
 	module.hot.dispose(function() { update(); });
 }
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(0)(false);
-// imports
-
-
-// module
-exports.push([module.i, "body{font-size:40px}", ""]);
-
-// exports
-
 
 /***/ })
 /******/ ]);
