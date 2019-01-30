@@ -1900,3 +1900,252 @@ app.bundle.js    23.4 kB       1  [emitted]  app
 动态加载CSS：a.bundle.js
 ```
 
+## postcss in webpack
+
+- PostCSS
+- Autoprefixer 插件
+- CSS-nano
+- CSS-next
+
+### PostCSS
+
+> A tool for transforming CSS with JavaScript
+
+- 安装
+  - postcss
+  - postcss-loader
+  - autoprefixer 插件
+    - 自动添加浏览器前缀
+      - a { display: flex}
+      - a { display: -webkit-box; display: -webkit-flex; display: -ms-flexbox; display: flex }
+  - postcss-cssnano 插件
+    - 压缩CSS
+  - postcss-cssnext 插件
+    - Use tomorrow's CSS syntax, today
+    - 新语法
+      - CSS Variables
+      - custom selectors
+      - calc()
+
+``` sh
+$ cnpm i postcss postcss-loader autoprefixer cssnano postcss-cssnext --save-dev
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }            
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  // minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                  // camelCase: false, //导出以驼峰化命名的类名, 默认false
+                  // import: true, //禁止或启用@import, 默认true
+                  // url: true, //禁止或启用url, 默认true
+                  // sourceMap: false, //禁止或启用sourceMap, 默认false
+                  // importLoaders: 0, //在css-loader前应用的loader的数目, 默认为0
+                  // alias: {} //起别名, 默认{}
+                }
+                // loader: 'file-loader'
+              },
+              {
+                loader: 'postcss-loader',
+                options: {
+                  ident: 'postcss',
+                  plugins: [
+                    // 导入插件并运行()
+                    require('autoprefixer')()
+                  ]
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      })
+    ]
+  }
+$ vim css/base.less
+  .box {
+    transition: transform 1s;
+  }
+$ webpack
+
+       Asset       Size  Chunks             Chunk Names
+  a.bundle.js    2.24 kB       0  [emitted]  a
+app.bundle.js    23.4 kB       1  [emitted]  app
+  app.min.css  442 bytes       1  [emitted]  app
+
+app.min.css 包含
+.src-css-base_box_3WjJS {
+  transition: -webkit-transform 1s;
+  transition: transform 1s;
+  transition: transform 1s, -webkit-transform 1s;
+}
+```
+
+**使用cssnext**
+``` sh
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }            
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  // minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                  // camelCase: false, //导出以驼峰化命名的类名, 默认false
+                  // import: true, //禁止或启用@import, 默认true
+                  // url: true, //禁止或启用url, 默认true
+                  // sourceMap: false, //禁止或启用sourceMap, 默认false
+                  // importLoaders: 0, //在css-loader前应用的loader的数目, 默认为0
+                  // alias: {} //起别名, 默认{}
+                }
+                // loader: 'file-loader'
+              },
+              {
+                loader: 'postcss-loader',
+                options: {
+                  ident: 'postcss',
+                  plugins: [
+                    // postcss-cssnext 已经包含autoprefixer所以要注释
+                    // require('autoprefixer')(),
+                    require('postcss-cssnext')()
+                  ]
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      })
+    ]
+  }
+
+$ vim src/css/common.less
+  // 未来的CSS语法
+  :root {
+    --mainColor：red;
+  }
+  a {
+    color: var(--mainColor)
+  }
+
+$ webpack
+
+        Asset       Size  Chunks             Chunk Names
+  a.bundle.js    2.24 kB       0  [emitted]  a
+app.bundle.js    23.4 kB       1  [emitted]  app
+  app.min.css  609 bytes       1  [emitted]  app
+
+app.min.css代码
+/* 未来的CSS语法 */
+a {
+  color: red;
+}
+```
+
+### Broswerlist
+
+- 所有插件都公用
+  - package.json
+  - .browserslistrc
+
+``` sh
+$ vim package.json
+ "devDependencies": {
+    "autoprefixer": "^9.4.7",
+    "css-loader": "^0.28.11",
+    "cssnano": "^4.1.8",
+    "extract-text-webpack-plugin": "^3.0.2",
+    "file-loader": "^3.0.1",
+    "less": "^3.9.0",
+    "less-loader": "^4.1.0",
+    "postcss": "^7.0.14",
+    "postcss-cssnext": "^3.1.0",
+    "postcss-loader": "^3.0.0",
+    "style-loader": "^0.23.1",
+    "webpack": "^3.12.0"
+  },
+  "browserslist": [
+    ">= 1%",
+    "last 2 versions"
+  ]
+
+```
+
+- postcss-import
+- postcss-url
+- postcss-assets

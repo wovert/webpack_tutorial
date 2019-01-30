@@ -1,0 +1,38 @@
+body {
+  font-size: 40px
+}
+
+.src-css-common_bigBox_PK_Jy {
+  border: 2px solid #ccc;
+}
+
+/* 未来的CSS语法 */
+:root {
+  --mainColor: red;
+}
+
+a {
+  color: var(--mainColor)
+}html {
+  background: #f938ab;
+}
+.src-css-base_box_3WjJS {
+  width: 200px;
+  height: 200px;
+  border-radius: 4px solid #f938ab;
+  background: #333;
+  -webkit-transition: -webkit-transform 1s;
+  transition: -webkit-transform 1s;
+  transition: transform 1s;
+  transition: transform 1s, -webkit-transform 1s;
+}
+body {
+  font-size: 40px;
+}
+.src-css-common_bigBox_PK_Jy {
+  border: 2px solid #ccc;
+}
+/* 未来的CSS语法 */
+a {
+  color: red;
+}
