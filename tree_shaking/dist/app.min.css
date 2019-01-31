@@ -1,0 +1,16 @@
+html {
+  background: #f938ab;
+}
+
+.box {
+  width: 200px;
+  height: 200px;
+  border-radius: 4px solid #f938ab;
+  background: #333;
+}
+
+.littleBox {
+  font-size: 20px;
+  height: 50px;
+  width: 50px;
+}

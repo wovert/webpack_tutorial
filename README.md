@@ -1,5 +1,12 @@
 # Webpack
 
+## --save-dev 与 --save 区别
+
+表面上的区别是`--save`会把依赖包名称添加到 package.json 文件 `dependencies` 键下，`--save-dev` 则添加到 package.json 文件 `devDependencies` 键下。
+它们真正的区别是，npm自己的文档说`dependencies是运行时依赖`，`devDependencies是开发时的依赖`。即`devDependencies` 下列出的模块，是我们`开发时用的`，比如 我们安装 js的压缩包gulp-uglify 时，我们采用的是 “npm install –save-dev gulp-uglify ”命令安装，因为我们在发布后用不到它，而只是在我们开发才用到它。`dependencies` 下的模块，则是我们`发布后还需要依赖的模块`，譬如像`jQuery`库或者`Vue`框架类似的，我们在开发完后后肯定还要依赖它们，否则就运行不了。
+
+另外需要补充的是： 正常使用`npm install`时，会下载`dependencies和devDependencies`中的模块，当使用`npm install –production`或者注明N`ODE_ENV变量值为production时`，只会下载`dependencies`中的模块。
+
 ## webpack 介绍
 
 ### webpack 的诞生
@@ -2149,3 +2156,488 @@ $ vim package.json
 - postcss-import
 - postcss-url
 - postcss-assets
+
+## Tree Shaking
+
+> 摇树，webpack 2.0 引进的功能。树上的枯叶子会摇下来。引申到项目中就是有些代码不在用到它或重来没用用到它，那么项目上线的时候这些代码存在项目中，势必会造成用户资源浪费。因为，用户网上浏览我们的页面的资源，这个时候有些资源重来没有用到，会耽误它的下载时间。所以，Tree shaking 十分的有必要。
+
+- Tree Shaking 两种
+  - JS Tree Shaking
+    - 引用一个库或使用多个对象，有些人引用其中一部分对象，其他的代码其实都不用，那么，这些代码不想要上线，但是他们在一个文件中，这时候使用Tree Shaking 打包的去掉没有使用到的代码。
+  - CSS Tree Shaking
+    - DOM节点class和id名称甚至是标签，有些样式匹配到class名称，这个样式应用到我们的页面中，有些样式永远都匹配不上，那就不应该打包的时候打包项目当中去，而不必用户下载。
+
+### Tree Shaking 使用场景
+
+- 常规优化
+- 引入第三方库的某一个功能
+
+- 插件 webpack.optimize.uglifyJS 会移除没有用到的代码
+
+#### 本地文件 tree-shaking
+
+``` sh
+$ mkdir src/common
+$ vim src/common/utils.js
+  export function a () {
+    return 'this is a'
+  }
+
+  export function b () {
+    return 'this is b'
+  }
+
+  export function c () {
+    return 'this is c'
+  }
+  ...
+$ vim src/app.js
+  import { a } from './common/utils'
+  console.log(a())
+$ webpack
+      Asset       Size  Chunks             Chunk Names
+  a.bundle.js    2.08 kB       0  [emitted]  a
+app.bundle.js    23.9 kB       1  [emitted]  app
+  app.min.css  328 bytes       1  [emitted]  app
+
+
+app.bundle.js 文件中 /* harmony export (immutable) */ 用到ES6 import的意思
+/* unused harmony export b */ 没有使用的意思
+
+"use strict";
+/* harmony export (immutable) */ __webpack_exports__["a"] = a;
+/* unused harmony export b */
+/* unused harmony export c */
+/* unused harmony export d */
+/* unused harmony export e */
+/* unused harmony export f */
+function a () {
+  return 'this is a'
+}
+
+function b () {
+  return 'this is b'
+}
+
+function c () {
+  return 'this is c'
+}
+
+function d () {
+  return 'this is d'
+}
+
+function e () {
+  return 'this is e'
+}
+
+function f () {
+  return 'this is f'
+}
+
+
+
+如何去掉
+function b () {
+  return 'this is b'
+}
+
+function c () {
+  return 'this is c'
+}
+
+function d () {
+  return 'this is d'
+}
+
+function e () {
+  return 'this is e'
+}
+
+function f () {
+  return 'this is f'
+}
+
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  var webpack = require('webpack')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      }),
+
+      // 打包时，在库中没有用到的代码移除
+      new webpack.optimize.UglifyJsPlugin()
+    ]
+  }
+$ webpack
+
+ Asset       Size  Chunks             Chunk Names
+  a.bundle.js  495 bytes       0  [emitted]  a
+app.bundle.js    7.83 kB       1  [emitted]  app
+  app.min.css  263 bytes       1  [emitted]  app
+
+app.bundle.js 文件被压缩并只有 this is a代码，其他没有用到的代码移除了  
+```
+
+#### 第三方文件 tree-shaking
+
+``` sh
+运行时依赖
+$ npm i lodash --save
+$ vim src/app.js
+  import { chunk } from 'lodash'
+  console.log(chunk([1,2,3,4,5,6,7,8,9], 2))
+$ vim webapck.config.js
+  // new webpack.optimize.UglifyJsPlugin()
+$ webpack
+
+  a.bundle.js    2.07 kB       0  [emitted]         a
+app.bundle.js     566 kB       1  [emitted]  [big]  app
+  app.min.css  263 bytes       1  [emitted]         app
+
+app.bundle.js文件里包含了 lodash 所有代码
+
+$ vim webapck.config.js
+  new webpack.optimize.UglifyJsPlugin()
+$ webpack
+    a.bundle.js  499 bytes       0  [emitted]  a
+  app.bundle.js    80.1 kB       1  [emitted]  app
+    app.min.css  263 bytes       1  [emitted]  app
+
+  app.bundle.js只有chunk方法，但是一个方法不可能包括80.1KB
+  node_modules/lodash/lodash.js 文件就一万多行文件，并不是模块输出的文件，所有uglify没有生效，是因为第三方库的原因。
+
+$ npm i lodash-es --save
+$ vim src/app.js
+  import { chunk } from 'lodash-es'
+$ webpack
+    a.bundle.js  509 bytes       0  [emitted]  a
+  app.bundle.js     147 kB       1  [emitted]  app
+    app.min.css  263 bytes       1  [emitted]  app
+
+  app.bundle.js文件大小更大了... 什么鬼？
+  第三方库可能没有按照export或webapck tree shaking 方式书写的格式。但是，可以借助第三方工具。lodash 可以借助babel-plugin-lodash
+
+$ npm i babel-plugin-lodash --save-dev
+$ npm i babel-loader@8.0.5 @babel/core @babel/preset-env --save-dev
+
+
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  var webpack = require('webpack')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+                transform: './css.transform.js' // 根目录下有css.transform.js
+              }
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  minimize: true, //压缩css代码, 默认false
+                  modules: true, //开启css-modules模式, 默认值为flase
+                  localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        },
+        {
+          test: /\.js$/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: ['@babel/preset-env'],
+                plugins: ['lodash']
+              }
+            }
+          ],
+          exclude: /node_modules/
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      }),
+
+      // 打包时，在库中没有用到的代码移除
+      new webpack.optimize.UglifyJsPlugin()
+    ]
+  }
+$ webpack
+
+Support for the experimental syntax 'dynamicImport' isn't currently enabled
+
+解决方案
+
+一：安装插件babel-plugin-dynamic-import-webpack
+$ npm install babel-plugin-dynamic-import-webpack --save-dev
+
+二：在配置文件的module的rules下进行插件的配置，如下
+{
+    test: /\.js/,
+    use: [{
+        loader: 'babel-loader',
+        options: {//如果有这个设置则不用再添加.babelrc文件进行配置
+            "babelrc": false,// 不采用.babelrc的配置
+            "plugins": [
+                "dynamic-import-webpack"
+            ]
+        }
+    }]
+}
+
+$ webpack
+
+  0.bundle.js  501 bytes       0  [emitted]
+app.bundle.js    11.5 kB       1  [emitted]  app
+  app.min.css  263 bytes       1  [emitted]  app
+
+app.bundle.js 只有11.5KB文件
+
+```
+
+### Lodash Tree shaking
+
+- Not working
+  - lodash-es => Not working
+    - babel-plugin-lodash => working
+
+### CSS Tre Shaking
+
+- [Purify CSS](https://github.com/pufifycss/pufifycss)
+- webpack 插件：`purifycss-webpack`
+
+- options
+  - `path: glob.sync([])`
+
+``` sh
+$ npm i purifycss purifycss-webpack glob-all --save-dev
+$ vim src/css/base.less
+  @baseColor: #f938ab;
+
+  html {
+    background: @baseColor;
+  }
+  .box {
+    composes: bigBox from './common.less';
+    width: 200px;
+    height: 200px;
+    border-radius: 4px solid @baseColor;
+    background: #333;
+  }
+
+  .largeBox {
+    height: 400px;
+    width: 400px;
+    border: 5px
+  }
+
+  .smallBox {
+    font-size: 10px
+  }
+
+  .littleBox {
+    font-size:20px
+  }
+$ vim index.html
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./dist/app.min.css">
+  </head>
+  <body>
+    <h1>CSS Tree Shaking</h1>
+    <div id="app">
+      <div class="largeBox"></div>
+    </div>
+    <script src="./dist/app.bundle.js"></script>
+  </body>
+  </html>
+
+$ vim src/app.js
+  import base from './css/base.less'
+  import common from './css/common.less'
+
+  var app = document.getElementById('app')
+  var div = document.createElement('div')
+  div.className = 'box'
+  app.appendChild(div)
+
+  // 动态异步加载
+  import(/* webpackChunkName:'a' */'./components/a').then(function (a) {
+    console.log(a)
+  })
+
+  import { a } from './common/utils'
+  console.log(a())
+
+  import { chunk } from 'lodash-es'
+  console.log(chunk([1,2,3,4,5,6,7,8,9], 2))
+
+$ vim webpack.config.js
+  var path = require('path')
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  var webpack = require('webpack')
+  var PurifyCSS = require('purifycss-webpack')
+  var glob = require('glob-all')
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      publicPath: './dist/',
+      filename: '[name].bundle.js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+              }            
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  minimize: true, //压缩css代码, 默认false
+                  // modules: true, //开启css-modules模式, 默认值为flase
+                  // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        },
+        {
+          test: /\.js$/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: ['@babel/preset-env'],
+                plugins: [
+                  'lodash',
+                  // 'dynamic-import-webpack'
+                ]
+              },
+            }
+          ],
+          exclude: /node_modules/
+        }
+      ]
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: '[name].min.css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      }),
+
+      new PurifyCSS({
+        paths: glob.sync([ // 传入多文件路径
+          path.resolve(__dirname, './*.html'), // 处理根目录下的html文件
+          path.resolve(__dirname, './src/*.js') // 处理src目录下的js文件
+        ])
+      }),
+
+      // 打包时，在库中没有用到的代码移除
+      new webpack.optimize.UglifyJsPlugin()
+    ]
+  }
+$ webpack
+
+
+```
