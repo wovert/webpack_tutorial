@@ -1,0 +1,40 @@
+html {
+  background: #f938ab;
+}
+
+.box {
+  width: 200px;
+  height: 200px;
+  border-radius: 4px solid #f938ab;
+  background: #333;
+}
+
+.bigBox {
+  height: 400px;
+  width: 400px;
+  border: 5px;
+}
+
+.bigBox div {
+  width: 220px;
+  height: 110px;
+  float: left;
+}
+
+.bigBox .ani1 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: 0 0;
+  background-size: 440px 220px;
+}
+
+.bigBox .ani2 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: 0 -110px;
+  background-size: 440px 220px;
+}
+
+.bigBox .ani3 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: -220px 0;
+  background-size: 440px 220px;
+}

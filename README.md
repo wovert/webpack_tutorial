@@ -2638,6 +2638,45 @@ $ vim webpack.config.js
     ]
   }
 $ webpack
-
-
 ```
+
+## 文件处理
+
+- 图片处理
+- 字体文件
+- 第三方JS库
+  - 引用CDN的地址
+
+### 图片处理
+
+- CSS中引入的图片: file-loader
+- 自动合成雪碧图: postcss-sprites
+- 压缩图片: img-loader
+- base64 编码: url-loader
+
+``` sh
+$ npm i file-loader url-loader img-loader postcss-sprites --save-dev
+$ vim webpack.config.js
+ {
+    test: /\.(png|jpg|jpeg|gif)$/,
+    use: [
+      # {
+      #   loader:'file-loader',
+      #   options: {
+      #     publicPath: '',
+      #     outputPath: '../dist/',
+      #     useRelativePath: true
+      #   }
+      # },
+      {
+        loader: 'url-loader',
+        options: {
+          limit: 10000 // 10k
+        }
+      }
+    ]
+  }  
+
+url-loader 与 file-loader区别是 url-loader 会在限制大小下可以转换为base64
+```
+
