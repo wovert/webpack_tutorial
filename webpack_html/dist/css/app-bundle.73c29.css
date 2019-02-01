@@ -1,0 +1,79 @@
+html {
+  background: #f938ab;
+}
+
+.box {
+  width: 200px;
+  height: 200px;
+  border-radius: 4px solid #f938ab;
+  background: #333;
+}
+
+.bigBox {
+  height: 400px;
+  width: 400px;
+  border: 5px;
+}
+
+.bigBox div {
+  width: 220px;
+  height: 110px;
+  float: left;
+}
+
+.bigBox .ani1 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: 0 0;
+  background-size: 440px 220px;
+}
+
+.bigBox .ani2 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: 0 -110px;
+  background-size: 440px 220px;
+}
+
+.bigBox .ani3 {
+  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-position: -220px 0;
+  background-size: 440px 220px;
+}
+
+@font-face {
+  font-family: Font Awesome\ 5 Brands;
+  font-style: normal;
+  font-weight: 400;
+  font-display: auto;
+  src: url(../assets/fonts/fa-brands-400-1010b.eot);
+  src: url(../assets/fonts/fa-brands-400-1010b.eot?#iefix) format("embedded-opentype"),url(../assets/fonts/fa-brands-400-ae990.woff2) format("woff2"),url(../assets/fonts/fa-brands-400-d6ff6.woff) format("woff"),url(../assets/fonts/fa-brands-400-c6aef.ttf) format("truetype"),url(data:image/svg+xml;base64,bW9kdWxlLmV4cG9ydHMgPSAiLi4vYXNzZXRzL2ZvbnRzL2ZhLWJyYW5kcy00MDAtYzk1ZjUuc3ZnIjs=#fontawesome) format("svg");
+}
+
+@font-face {
+  font-family: Font Awesome\ 5 Free;
+  font-style: normal;
+  font-weight: 400;
+  font-display: auto;
+  src: url(../assets/fonts/fa-regular-400-065ed.eot);
+  src: url(../assets/fonts/fa-regular-400-065ed.eot?#iefix) format("embedded-opentype"),url(../assets/fonts/fa-regular-400-9c0eb.woff2) format("woff2"),url(../assets/fonts/fa-regular-400-87f37.woff) format("woff"),url(../assets/fonts/fa-regular-400-2e562.ttf) format("truetype"),url(data:image/svg+xml;base64,bW9kdWxlLmV4cG9ydHMgPSAiLi4vYXNzZXRzL2ZvbnRzL2ZhLXJlZ3VsYXItNDAwLTVkYzM5LnN2ZyI7#fontawesome) format("svg");
+}
+
+@font-face {
+  font-family: Font Awesome\ 5 Free;
+  font-style: normal;
+  font-weight: 900;
+  font-display: auto;
+  src: url(../assets/fonts/fa-solid-900-a20e6.eot);
+  src: url(../assets/fonts/fa-solid-900-a20e6.eot?#iefix) format("embedded-opentype"),url(../assets/fonts/fa-solid-900-52134.woff2) format("woff2"),url(../assets/fonts/fa-solid-900-a6de6.woff) format("woff"),url(../assets/fonts/fa-solid-900-87254.ttf) format("truetype"),url(data:image/svg+xml;base64,bW9kdWxlLmV4cG9ydHMgPSAiLi4vYXNzZXRzL2ZvbnRzL2ZhLXNvbGlkLTkwMC01NjQwNC5zdmciOw==#fontawesome) format("svg");
+}
+
+.fa {
+  font-family: Font Awesome\ 5 Free;
+}
+
+.fa {
+  font-weight: 900;
+}
+
+.fa-folder:before {
+  content: "\F07B";
+}
