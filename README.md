@@ -2680,6 +2680,65 @@ $ vim webpack.config.js
 url-loader 与 file-loader区别是 url-loader 会在限制大小下可以转换为base64
 ```
 
+### retina处理
+
+```sh
+$ vim webpack.config.js
+  {
+    loader: 'postcss-loader',
+    options: {
+      ident: 'postcss',
+      plugins: [
+        // postcss-cssnext 已经包含autoprefixer所以要注释
+        // require('autoprefixer')(),
+        require('postcss-sprites')({
+          //spritePath: 'dist/assets/imgs/sprites'
+          retina: true
+        }),
+        require('postcss-cssnext')()
+      ]
+    }
+  }
+
+$ mv assets/imgs/activity.png assets/imgs/activity@2x.png
+$ mv assets/imgs/good-merchant.png assets/imgs/good-merchant@2x.png
+$ mv assets/imgs/merchant.png assets/imgs/merchant@2x.png
+$ vim src/css/base.less
+
+  div {
+    width: 220px;
+    height: 110px;
+    float: left;
+  }
+  .ani1 {
+    background: url(../assets/imgs/activity.png) no-repeat;
+  }
+  .ani2 {
+    background: url(../assets/imgs/good-merchant.png) no-repeat;
+  }
+  .ani3 {
+    background: url(../assets/imgs/merchant.png) no-repeat;
+  }
+  修改成一半大小
+  div {
+    width: 110px;
+    height: 55px;
+    float: left;
+  }
+  .ani1 {
+    background: url(../assets/imgs/activity@2x.png) no-repeat;
+  }
+  .ani2 {
+    background: url(../assets/imgs/good-merchant@2x.png) no-repeat;
+  }
+  .ani3 {
+    background: url(../assets/imgs/merchant@2x.png) no-repeat;
+  }
+$ webpack
+```
+
+
+
 ## 字体文件
 
 - file-loader

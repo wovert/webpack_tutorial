@@ -16,25 +16,25 @@ html {
 }
 
 .bigBox div {
-  width: 220px;
-  height: 110px;
+  width: 110px;
+  height: 55px;
   float: left;
 }
 
 .bigBox .ani1 {
-  background-image: url(assets/imgs/sprite-8bb6d.png);
+  background-image: url(assets/imgs/sprite.@2x-8bb6d.png);
   background-position: 0 0;
-  background-size: 440px 220px;
+  background-size: 220px 110px;
 }
 
 .bigBox .ani2 {
-  background-image: url(assets/imgs/sprite-8bb6d.png);
-  background-position: 0 -110px;
-  background-size: 440px 220px;
+  background-image: url(assets/imgs/sprite.@2x-8bb6d.png);
+  background-position: 0 -55px;
+  background-size: 220px 110px;
 }
 
 .bigBox .ani3 {
-  background-image: url(assets/imgs/sprite-8bb6d.png);
-  background-position: -220px 0;
-  background-size: 440px 220px;
+  background-image: url(assets/imgs/sprite.@2x-8bb6d.png);
+  background-position: -110px 0;
+  background-size: 220px 110px;
 }

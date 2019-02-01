@@ -45,6 +45,7 @@ module.exports = {
                   // require('autoprefixer')(),
                   require('postcss-sprites')({
                     //spritePath: 'dist/assets/imgs/sprites'
+                    retina: true
                   }),
                   require('postcss-cssnext')()
                 ]
