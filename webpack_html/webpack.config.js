@@ -12,6 +12,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     // publicPath: 'dist/',
+    // publicPath: '/',
     filename: '[name].bundle.[hash:5].js',
     chunkFilename: '[name].bundle.js' // 动态输出文件名
   },
@@ -83,8 +84,8 @@ module.exports = {
             options: {
               limit: 1000,
               name: '[name]-[hash:5].[ext]',
-              publicPath: '../assets/imgs/',
-              outputPath: '../assets/imgs/',
+              publicPath: 'assets/imgs/',
+              outputPath: 'assets/imgs/',
               useRelativePath: true
             }
           },
@@ -110,8 +111,8 @@ module.exports = {
             options: {
               limit: 5000,
               name: '[name]-[hash:5].[ext]',
-              publicPath: '../assets/fonts/',
-              outputPath: '../assets/fonts/',
+              publicPath: 'assets/fonts/',
+              outputPath: 'assets/fonts/',
               useRelativePath: true
             }
           }
@@ -127,7 +128,19 @@ module.exports = {
             }
           }
         ]
-      }
+      },
+      // {
+      //   test: /\.html$/,
+      //   use: [
+      //     {
+      //       loader: 'html-loader',
+      //       options: {
+      //         // 默认使用img:src
+      //         attrs: ['img:src', 'img:data-src']
+      //       }
+      //     }
+      //   ]
+      // },     
     ]
   },
 
@@ -142,7 +155,7 @@ module.exports = {
 
   plugins: [
     new ExtractTextWebpackPlugin({
-      filename: 'css/[name]-bundle.[hash:5].css', // 打包之后的名字
+      filename: '[name]-bundle.[hash:5].css', // 打包之后的名字
       allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
     }),
 
