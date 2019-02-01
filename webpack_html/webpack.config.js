@@ -4,6 +4,10 @@ var webpack = require('webpack')
 var PurifyCSS = require('purifycss-webpack')
 var glob = require('glob-all')
 var HtmlWebpackPlugin = require('html-webpack-plugin')
+
+// 提前载入 webpack 加载代码
+var HtmlInlineChunkPlugin = require('html-webpack-inline-chunk-plugin')
+
 module.exports = {
   entry: {
     app: './src/app.js'
@@ -166,16 +170,25 @@ module.exports = {
       ])
     }),
 
+    new HtmlInlineChunkPlugin({
+      inlineChunks: ['manifest']
+    }),
+
     new HtmlWebpackPlugin({
       filename: 'index.html',  // 指定生成的文件路径
       template: './index.html',  // 模板文件
       // inject: false // 只有手动载入的资源，不会自动插入打包的资源
-      chunks: [
-        'app'
-      ],
+      // chunks: [
+      //   'app'
+      // ],
       minify: {
         collapseWhitespace: true       // 压缩html,借助html-minify包
       }
+    }),
+
+
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest'
     }),
 
     // 使用npm加载
