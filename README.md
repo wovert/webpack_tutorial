@@ -3960,3 +3960,33 @@ $ vim webpack.config.js
 $ webpack
 
 ```
+
+## 搭建开发环境
+
+### 开发环境搭建方法
+
+1. `webpack watch mode`
+2. `webpack-dev-serer`
+3. `exporess + webpack-dev-middleware`
+
+`clean-webpack-plugin`： 删除打包生成目录插件
+
+### webpack watch mode
+
+[webpack watch mode 案例](./webpack_watch_mode/)
+
+- `webpack --watch`
+- `webpack -w`
+
+```sh
+$ cnpm i clean-webpack-plugin --save-dev
+$ vim webpack.config.js
+  var CleanWebpackPlugin = require('clean-webpack-plugin')
+  new CleanWebpackPlugin(['dist'])
+$ webapck -w --progress --display-reasons --color
+
+```
+
+### webpack-dev-server
+
+
