@@ -4929,4 +4929,45 @@ export function componentA () {
 $ npm run server
 ```
 
+## source map 调试
 
+- js source map
+- css source map
+
+### 配置source map调试方法
+
+1. Devtool
+2. webpack.SourceMapDevToolPlugin
+  webpack.EvalSourceMapDevToolPlugin
+
+- development
+  - eval
+  - eval-source-map
+  - cheap-eval-source-map
+  - cheap-module-eval-source-map
+- production
+  - source-map
+  - hidden-source-map
+  - nosource-source-map
+
+- css source map
+  - css-loader.option.sourcemap
+  - less-loader.option.sourcemap
+  - sass-loader.option.sourcemap
+
+```sh
+$ vim webpack.config.js
+  ...
+  devtool: 'eval'
+  ...
+$ npm run server
+```
+
+```sh
+$ vim webpack.config.js
+  ...
+  devtool: 'source-map'
+  ...
+  // new webpack.optimize.UglifyJsPlugin(),
+$ 
+```

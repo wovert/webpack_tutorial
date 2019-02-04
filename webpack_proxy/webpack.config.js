@@ -20,7 +20,8 @@ module.exports = {
     filename: 'js/[name].bundle.[hash:5].js',
     chunkFilename: '[name].bundle.js' // 动态输出文件名
   },
-
+  // devtool: 'eval',
+  devtool: 'source-map',
   devServer: {
     port: 9001,
     // inline: true, // 默认 true，false: 页面顶部显示打包状态
@@ -122,9 +123,9 @@ module.exports = {
               plugins: [
                 // postcss-cssnext 已经包含autoprefixer所以要注释
                 // require('autoprefixer')(),
-                require('postcss-sprites')({
-                  //spritePath: 'dist/assets/imgs/sprites'
-                }),
+                // require('postcss-sprites')({
+                //   //spritePath: 'dist/assets/imgs/sprites'
+                // }),
                 require('postcss-cssnext')()
               ]
             }
@@ -155,27 +156,35 @@ module.exports = {
         use: [
           // 'url-loader?limit=1000',
           {
-            loader: 'url-loader',
+            loader: 'file-loader',
             options: {
-              limit: 1000,
-              name: '[name]-[hash:5].[ext][hash:4]',
-              // publicPath: '/assets/imgs/',
-              // outputPath: '/assets/imgs/',
+              publicPath: '',
+              outputPath: 'dist/',
               useRelativePath: true
             }
-          },
-          {
-            loader: 'img-loader',
-            options: {
-
-              plugins: [
-                require('imagemin-pngquant')({
-                  floyd: 0.5,
-                  speed: 2
-                }),
-              ]
-            }
           }
+          // {
+          //   loader: 'url-loader',
+          //   options: {
+          //     limit: 1000,
+          //     name: '[name]-[hash:5].[ext][hash:4]',
+          //     // publicPath: '/assets/imgs/',
+          //     // outputPath: '/assets/imgs/',
+          //     useRelativePath: true
+          //   }
+          // },
+          // {
+          //   loader: 'img-loader',
+          //   options: {
+
+          //     plugins: [
+          //       require('imagemin-pngquant')({
+          //         floyd: 0.5,
+          //         speed: 2
+          //       }),
+          //     ]
+          //   }
+          // }
         ]
       },
       {
@@ -268,7 +277,7 @@ module.exports = {
     // }),
 
     // 打包时，在库中没有用到的代码移除
-    new webpack.optimize.UglifyJsPlugin(),
+    // new webpack.optimize.UglifyJsPlugin(),
     
     // 指定剔除的目录
     new CleanWebpackPlugin(['dist']),
