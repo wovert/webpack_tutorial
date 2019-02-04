@@ -4258,6 +4258,7 @@ $ npm run serer
 ```
 
 ### 远程代理接口
+[webpack proxy](./webpack_proxy)
 
 - http-proxy-middleware 代理远程接口请求
   - options
@@ -4543,4 +4544,26 @@ $ vim webpack.config.js
     ]
   }
 $ npm run server
+```
+
+### 模块热更新
+
+- module hot reloading
+
+- 保持应用的数据状态
+- 节省调试时间
+- 样式调试更快
+
+- devServer.hot
+- webpack.HotModuleReplacementPlugin
+- webpack.NamedModulesPlugin 模块的相对路径
+
+- module.hot
+- module.hot.accept 模块热更新的时候需要
+- module.hot.decline
+
+```sh
+$ vim webpack.config.js
+
+
 ```

@@ -1,9 +1,15 @@
 import base from './css/base.less'
+// import { renderA } from './components/a'
+import { componentA } from './components/a'
 
 var app = document.getElementById('app')
+var one = document.getElementById('one')
 var div = document.createElement('div')
-div.className = 'box'
+div.className = 'littleBox'
 app.appendChild(div)
+
+var list = componentA()
+one.appendChild(list)
 
 $('div').addClass('new')
 
@@ -30,3 +36,19 @@ $.get('/msg/index', {
 }, function (data) {
   console.log(data)
 })
+
+// renderA()
+
+
+
+// 强制js热更新
+if(module.hot) {
+  // module.hot.accept()
+  module.hot.accept('./components/a', function () {
+    one.removeChild(list)
+    let ComponentA = require('./components/a').componentA
+    let newList = ComponentA()
+    one.appendChild(newList)
+    list = newList
+  })
+}

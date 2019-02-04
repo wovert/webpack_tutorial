@@ -39,6 +39,8 @@ module.exports = {
         }
       }
     },
+    hot: true,
+    hotOnly: true,
     historyApiFallback: {
       rewrites: [
         {
@@ -55,45 +57,82 @@ module.exports = {
 
   module: {
     rules: [
+      // {
+      //   test: /\.less$/,
+      //   use: ExtractTextWebpackPlugin.extract({
+      //     fallback: {
+      //       loader: 'style-loader',
+      //       options: {
+      //         // insertInto: '#app', // style插入到#app元素下
+      //         singleton: true, // 仅显示一个style标签
+      //       }            
+      //     },
+      //     use: [
+      //       {
+      //         loader: 'css-loader',
+      //         options: {
+      //           minimize: true, //压缩css代码, 默认false
+      //           // modules: true, //开启css-modules模式, 默认值为flase
+      //           // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+      //         }
+      //       },
+      //       {
+      //         loader: 'postcss-loader',
+      //         options: {
+      //           ident: 'postcss',
+      //           plugins: [
+      //             // postcss-cssnext 已经包含autoprefixer所以要注释
+      //             // require('autoprefixer')(),
+      //             require('postcss-sprites')({
+      //               //spritePath: 'dist/assets/imgs/sprites'
+      //             }),
+      //             require('postcss-cssnext')()
+      //           ]
+      //         }
+      //       },            
+      //       {
+      //         loader: 'less-loader'
+      //       }
+      //     ]
+
+      //   })
+      // },
       {
         test: /\.less$/,
-        use: ExtractTextWebpackPlugin.extract({
-          fallback: {
+        use:  [
+          {
             loader: 'style-loader',
             options: {
               // insertInto: '#app', // style插入到#app元素下
               singleton: true, // 仅显示一个style标签
-            }            
-          },
-          use: [
-            {
-              loader: 'css-loader',
-              options: {
-                minimize: true, //压缩css代码, 默认false
-                // modules: true, //开启css-modules模式, 默认值为flase
-                // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
-              }
-            },
-            {
-              loader: 'postcss-loader',
-              options: {
-                ident: 'postcss',
-                plugins: [
-                  // postcss-cssnext 已经包含autoprefixer所以要注释
-                  // require('autoprefixer')(),
-                  require('postcss-sprites')({
-                    //spritePath: 'dist/assets/imgs/sprites'
-                  }),
-                  require('postcss-cssnext')()
-                ]
-              }
-            },            
-            {
-              loader: 'less-loader'
             }
-          ]
-
-        })
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              minimize: true, //压缩css代码, 默认false
+              // modules: true, //开启css-modules模式, 默认值为flase
+              // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+            }
+          },          
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              plugins: [
+                // postcss-cssnext 已经包含autoprefixer所以要注释
+                // require('autoprefixer')(),
+                require('postcss-sprites')({
+                  //spritePath: 'dist/assets/imgs/sprites'
+                }),
+                require('postcss-cssnext')()
+              ]
+            }
+          }, 
+          {
+            loader: 'less-loader'
+          }
+        ]
       },
       {
         test: /\.js$/,
@@ -232,7 +271,11 @@ module.exports = {
     new webpack.optimize.UglifyJsPlugin(),
     
     // 指定剔除的目录
-    new CleanWebpackPlugin(['dist'])
+    new CleanWebpackPlugin(['dist']),
+
+    // 模块热更新效果
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NamedModulesPlugin()
   ]
 }
 
