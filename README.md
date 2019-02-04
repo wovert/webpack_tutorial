@@ -4969,5 +4969,20 @@ $ vim webpack.config.js
   devtool: 'source-map'
   ...
   // new webpack.optimize.UglifyJsPlugin(),
-$ 
+```
+
+牺牲性能，调试方便
+```sh
+$ vim webpack.config.js
+  devtool: 'cheap-module-source-map'
+```
+刚开始编译慢，之后编译快
+
+CSS-source-map
+
+
+```sh
+$ vim webpack.config.js
+  // singleton: true 必须为true
+  sourceMap: true
 ```

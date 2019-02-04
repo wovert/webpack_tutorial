@@ -105,13 +105,15 @@ module.exports = {
             loader: 'style-loader',
             options: {
               // insertInto: '#app', // style插入到#app元素下
-              singleton: true, // 仅显示一个style标签
+              // singleton: true, // 仅显示一个style标签
+              sourceMap: true
             }
           },
           {
             loader: 'css-loader',
             options: {
               minimize: true, //压缩css代码, 默认false
+              sourceMap: true
               // modules: true, //开启css-modules模式, 默认值为flase
               // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
             }
@@ -120,6 +122,7 @@ module.exports = {
             loader: 'postcss-loader',
             options: {
               ident: 'postcss',
+              sourceMap: true,
               plugins: [
                 // postcss-cssnext 已经包含autoprefixer所以要注释
                 // require('autoprefixer')(),
@@ -131,7 +134,10 @@ module.exports = {
             }
           }, 
           {
-            loader: 'less-loader'
+            loader: 'less-loader',
+            options: {
+              sourceMap: true
+            }
           }
         ]
       },
