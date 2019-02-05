@@ -5665,8 +5665,334 @@ $ npm i webpack-merge -D
 ```sh
 $ cnpm i express opn webpack-dev-middleware webpack-hot-middleware http-proxy-middleware connect-history-api-fallback --save-dev
 $ vim build/server.js
+```
 
+## 打包结果分析
+
+- Offical Analyse Tool
+- webpack-bundle-analyzer
+
+- mac: `webpack --profile --json > stats.json`
+
+- windows(powershell): `webpack --profile --json | Out-file 'stats.json' -Encoding OEM`
+
+stats.json文件内容复制到 http://webpack.github.io/analyse/
+
+- 社区：`webpack-bundle-analyzer`
+  - 插件：`BundleAnalyzerPlugin`
+  - 命令行：`webpack-bundle-analyzer stats.json`
+
+```sh
+$ npm i webpack-bundle-analyzer --save-dev
+$ webpack --display-modules
+$ vim webpack.config.js
+  var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
+  ...
+  new BundleAnalyzerPlugin()
+  ...
+$ webpack
+```
+
+## 打包速度优化
+
+- 打包速度因素
+  - 文件多
+  - 依赖多
+  - 页面多
+
+- 办法1
+  - 分开 vendor(第三方代码) 和 app(业务代码)
+  - DllPlugin
+  - DllReferencePlugin
+- 办法2
+  - UglifyJsPlugin
+    - parallel
+    - cache
+- 办法3
+  - HappyPack (串行变成并行，for loader)
+  - HappyPack.ThreadPool
+- 办法4
+  - babel-loader
+    - options.cacheDirectory
+    - include
+    - exclude
+- 其他
+  - 减少 resolve
+  - Devtool: 去除 sourcemap
+  - cache-loader
+  - 升级 node
+  - 升级 webpack
+
+```sh
+$ vue init webapck vue_bundle
+$ cd vue_bundle
+$ npm i element-ui --save
+$ vim main.js
+  import { Button, Select } from 'element-ui'
+  
+  Vue.comonent(Button.name, Button)
+  Vue.comonent(Select.name, Select)
+$ npm run build
+  查看打包时间
+  首先第三方依赖于业务代码分开
+
+第三方依赖打包配置文件
+$ vim build/webpack.dll.conf.js
+  const path = require('path')
+  const webpack = require('webpack')
+
+  module.export = {
+    entry: {
+      vue: [
+        'vue',
+        'vue-router'
+      ],
+      ui: [
+        'element-ui'
+      ],
+
+      output: {
+        // 第三方打包生成目录
+        path: path.join(__dirname, '../src/dll/'),
+        filename: '[name].dll.js',
+        library: '[name]' // 引用第三方库的方式，怎么引用第三方库，vue或element全局变量
+      },
+
+      plugins: [
+        new webpack.DllPlugin({
+          // 打包生成目录
+          path: path.join(__dirname, '../src/ddl/', '[name]-manifest.json'),
+          name: '[name]'
+        }),
+
+        // dll文件uglify
+        new webpack.optimize.UglifyJsPlugin()
+      ]
+    }
+  }
+$ webpack --config build/webpack.dll.conf.js
+    ui.dll.js
+    vue.dll.js
+$ ls src/dll
+  ui-manifest.json
+  ui.dll.js
+  vue-manifest.json
+  vue.dll.js
+
+$ vim build/webpack.prod.conf.js
+  plugins: [
+    new webpack.DllReferencePlugin({
+      manifest: require('../src/dll/ui-manifest.json')
+    }),
+    new webpack.DllReferencePlugin({
+      manifest: require('../src/dll/vue-manifest.json')
+    }),
+    ...
+  ]
+$ npm run build
+  观察打包时间
+  已经把第三方包，单独的打过一次
+  这次打包是src业务代码，所以非常快。
+  通过分离第三方库和业务代码，加快打包速度
+```
+
+- 第二种方法：平行处理
+
+```sh
+$ vim build/webpack.base.conf.js
+  loader: 'babel-loader',
+  include: [resolve('src')] // babel执行范围
+
+$ vim build/webpack.prod.conf.js
+  new uglifyJsPlugin({
+    uglifyOptions: {
+      compress: {
+        warnings: false
+      }
+    },
+    sourceMap: config.build.productionSourceMap,
+    parallel: true,
+    cache: true
+  })
+$ vim config/index.js
+  productionSourceMap: false
+$ npm run build
+  平行处理和去掉sourceMap
+
+其他办法(happypack 并行处理loader)
+$ npm i happypack --save-dev
+$ vim build/webpack.base.conf.js
+  loader: 'vue-loader'改成
+  loader: 'happypack/loader?id=vue'
+  去掉otions: vueLoaderConfig
+$ vim biuld/webpack.prod.conf.js
+  const HappyPack = require('happypack')
+  plubins: [
+    new HappyPack({
+      id: 'vue',
+      loaders: [{
+        loader: 'vue-loader',
+        option: require('./vue-loader.conf')
+      }]
+    })
+  ]
+$ npm run build
+  打包时间更长
+  项目太小不建议使用happypack
+```
+
+## 长缓存优化
+
+- 什么是长缓存优化
+  - 1. 浏览器访问也main
+  - 2. 服务器控制http协议的响应头，告诉浏览器这些资源在某一个期间不用更新它；这些资源自己的版本号(js或css)；当这些资源不改变的时候，不会再次发起请求；较少用户访问网页时间
+  - 3. 目的：如果代码更新，更新请求；如果没有更新，继续使用缓存文件
+- 为什么需要长缓存？
+- 怎么做？
+
+### 长缓存优化场景
+
+- 场景： 改变 app 代码，vendor 变化
+- 解决：
+  - 提取vendor
+  - hash => chunkhash 文件哈希换成代码块哈希
+  - 提取 webpack runtime
+
+```sh
+$ vim src/foo.js
+  import react from 'react'
+  console.log('hello world')
+$ vim webpack.config.js
+  const path = require('path')
+  const webpack = require('webpack')
+
+  module.exports = {
+    entry: {
+      main: './src/foo', // app
+      vendor: ['react'] // vendor
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].[chunkhash].js'
+    }
+  }
+
+$ webpack
+  vendor.0x111.js
+  main.0x111.js
+$ vim webpack.config.js
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor', // 指向 vendor: ['react']
+      minChunks: infinity
+    })
+  ]
+$ webpack
+  main.xxxx.js 业务代码
+  vendor.x1x1x1.js 第三方代码
+$ vim src/foo.js
+  hello world改成 hi
+$ webpack
+  main.xxxx.js 业务代码
+  vendor.x3x3x3.js 第三方代码块又变化？什么鬼？提取webpack runtime
+$ vim webpack.config.js
+  new webpack.optimize.CommonsChunkPlugin({
+    name: 'manifest' // 没有entry的名称；提取webpack runtime
+  })
+$ webpack
+  vendor.xxx1
+  main.xxx2
+  manifest.xx3
+$ vim src/foo.js
+  hi改成 good morning
+$ webpack
+  vendor.xxx1 react库没有变化
+  main.xxx4 业务代码变化
+  manifest.xx5 重新打包，所有变化 
+```
+
+另一个场景：引入新模块，模块顺序变化，vendor hash 变化
+
+```sh
+$ vim src/foo.js
+  ...
+  import module from './module'
+  ...
+$ vim src/module.js
+  export default 'this is module'
+$ webpack
+  vendor 发生变化了？没有修改第三方库，怎么又变化？
+
+原因：chunk id变化，chunkhash值也会变化
+解决：不给chunk id，指定名字
+  NamedChunksPlugin
+  NamedModulesPlugin
+$ vim webpack.config.js
+  new webpack.NamedChunksPlugin(),
+  ...
+$ webpack
+  Asset         Chunks
+  main.xx       main
+  manifest.xx   manifest
+  vendor.xx     vendor
+  ./src/foo.js .... {main} [build]
+  ./src/module.js ... {main} [built]
+  multi react ... {vendor} [built]
+  + [11] hiden modules
+
+$ vim src/foo.js
+  ...
+  console.log('add new console log')
+$ webpack --dislay-modules
+  vendor 没有变化
+  [0] ... {vendor} 模块属于哪个chunk
+  ...
+  [13] ... {main}
+  
+module显示名字
+$ vim webpack.config.js
+  new webpack.NamedChunksPlugin(),
+  new webpack.NamedModulesPlugin(),
+$ webpack --display-modules
+  [0] => [模块的相对路径]
+
+$ vim src/foo.js 修改源码
+$ webpack --display-modules
+  比较之前的哈希值
 
 ```
 
+- 场景：动态引入模块时，vendor hash 变化
+- 解决：
 
+```sh
+$ vim src/async.js
+  export default {
+    name: 'async'
+  }
+$ vim src/foo.js
+  ...
+  // 动态引入模块
+  import('./async').then(function (a) {
+    cosnole.log(a)
+  })
+$ webpack --display-modules
+  0.........   0 异步加载模块id为0，没有chunk name
+  vendor 没有变化（老版本vendor会异步加载的模块时会hash值会变化，新版本已经解决此问题）
+
+解决：老版本
+  定义动态模块的 chunkname
+$ vim src/foo.js
+  import(/* webpackChunkName: 'async' */'./async').then(function (a){
+    console.log(a + '11')
+  })
+$ webpack --display-modules
+```
+
+- 总结：
+  - 独立打包 vendor
+  - 抽出 manifest (webpack runtime)
+  - 使用 NamedChunksPlugin
+  - 使用 NamedModulesPlugin
+  - 动态模块给定 模块名称

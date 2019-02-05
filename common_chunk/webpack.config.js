@@ -1,11 +1,13 @@
 var webpack = require('webpack')
 var path = require('path')
+var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
+
 
 module.exports = {
   entry: {
     'pageA': './src/page_a',
     'pageB': './src/page_b',
-    'vendor': ['lodash']
+    // 'vendor': ['lodash']
   },
 
   output: {
@@ -15,6 +17,8 @@ module.exports = {
   },
 
   plugins: [
+    new BundleAnalyzerPlugin(),
+
     new webpack.optimize.CommonsChunkPlugin({
       name: 'common', // 公共部分提取出来
       minChunks: 2,
