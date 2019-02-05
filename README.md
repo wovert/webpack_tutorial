@@ -5652,3 +5652,21 @@ $ npm run server
 ```sh
 $ npm i webpack-merge -D
 ```
+
+## middleware 搭建开发环境
+
+- Express or koa
+- webpack-dev-middleware
+- webpack-hot-middleware
+- http-proxy-middleware
+- connect-history-api-fallback
+- opn
+
+```sh
+$ cnpm i express opn webpack-dev-middleware webpack-hot-middleware http-proxy-middleware connect-history-api-fallback --save-dev
+$ vim build/server.js
+
+
+```
+
+
