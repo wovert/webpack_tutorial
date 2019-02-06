@@ -5996,3 +5996,24 @@ $ webpack --display-modules
   - 使用 NamedChunksPlugin
   - 使用 NamedModulesPlugin
   - 动态模块给定 模块名称
+
+## 多页面应用
+
+- PHP应用程序
+
+### 多页面应用特点
+
+- 多入口 entry
+- 多页面 html
+  - 每个页面不同的 chunk
+  - 每个页面不同的参数
+
+- 多配置：单页面单配置
+  - webpack 3.1.0
+  - parallel-webpack (parallel:平行, 并行处理webpack配置)
+  - 优点
+    - 可以使用parallel-webpack 来提高打包的速度
+    - 配置更加独立，灵活
+  - 缺点
+    - 不能多页面之间共享代码
+- 单配置：多页面单配置
