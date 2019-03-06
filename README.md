@@ -4275,3 +4275,1764 @@ module.exports = {
 $ npm run serer
 
 ```
+
+### 远程代理接口
+[webpack proxy](./webpack_proxy)
+
+- http-proxy-middleware 代理远程接口请求
+  - options
+    - target 代理地址
+    - changeOrigin 改变源地址，默认false, 调试改为true
+    - headers 头信息
+    - logLevel 调试日志
+    - pathRewrite 重定向接口，短地址访问远程长穿地址
+- devServer.proxy
+
+```sh
+$ vim src/app.js
+  import base from './css/base.less'
+
+  var app = document.getElementById('app')
+  var div = document.createElement('div')
+  div.className = 'box'
+  app.appendChild(div)
+
+  $('div').addClass('new')
+
+  import { a } from './common/utils'
+  console.log(a())
+
+  import { chunk } from 'lodash-es'
+  console.log(chunk([1,2,3,4,5,6,7,8,9], 2))
+
+  // var url = 'https://weibo.com/aj/v6/comment/big'
+  var url = '/aj/v6/comment/big'
+  var url = '/list'
+  $.get(url, {
+    // ajwvr:6,
+    // id: '4180778570984558',
+    // from: 'singleWeiBo',
+    // __rnd: '1549249279861'
+  }, function (data) {
+    console.log(data)
+  })
+
+  $.get('/msg/index', {
+    format: 'cards'
+  }, function (data) {
+    console.log(data)
+  })
+
+$ vim webpack.config.js
+
+  var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  var webpack = require('webpack')
+  var PurifyCSS = require('purifycss-webpack')
+  var HtmlWebpackPlugin = require('html-webpack-plugin')
+  var HtmlInlineChunkPlugin = require('html-webpack-inline-chunk-plugin') // 提前载入 webpack 加载代码
+  var CleanWebpackPlugin = require('clean-webpack-plugin')
+
+  var path = require('path')
+  var glob = require('glob-all')
+
+  module.exports = {
+    entry: {
+      app: './src/app.js'
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      // publicPath: 'dist/',
+      publicPath: '/',
+      filename: 'js/[name].bundle.[hash:5].js',
+      chunkFilename: '[name].bundle.js' // 动态输出文件名
+    },
+
+    devServer: {
+      port: 9001,
+      // inline: true, // 默认 true，false: 页面顶部显示打包状态
+      // historyApiFallback: true, // 不存在页面重定向到入口页面
+      proxy: {
+        '/': {
+          target: 'https://m.weibo.cn',
+          changeOrigin: true,
+          logLevel: 'debug', // 查看接口信息
+          pathRewrite: {
+            '^/list': '/api/config/list'
+          },
+          // /msg/index接口提示登录；需要cookie
+          headers: {
+            'Cookie': '_T_WM=38eac7ad57aa8e1a09f31d501361ba81; WEIBOCN_FROM=1110006030; SUB=_2A25xU8KMDeRhGeBN7FYS8S_Owz2IHXVSv-7ErDV6PUJbkdAKLXP4kW1NRC6B-R19Vyec-ZtFvf4uiRTGO_bIZmvT; SUHB=0tKqRAVnkzFzq7; MLOGIN=1; XSRF-TOKEN=8aaf35; M_WEIBOCN_PARAMS=lfid%3D102803%26luicode%3D20000174%26uicode%3D20000174'
+          }
+        }
+      },
+      historyApiFallback: {
+        rewrites: [
+          {
+            // from: '/pages/a',
+            // to: '/pages/a.html'
+            from: /^\/([a-zA-Z0-9]+\/?)([a-zA-Z0-9]+)/,
+            to: function (context) {
+              return '/' + context.match[1] + context.match[2] + '.html'
+            }
+          }
+        ]
+      }
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.less$/,
+          use: ExtractTextWebpackPlugin.extract({
+            fallback: {
+              loader: 'style-loader',
+              options: {
+                // insertInto: '#app', // style插入到#app元素下
+                singleton: true, // 仅显示一个style标签
+              }            
+            },
+            use: [
+              {
+                loader: 'css-loader',
+                options: {
+                  minimize: true, //压缩css代码, 默认false
+                  // modules: true, //开启css-modules模式, 默认值为flase
+                  // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+                }
+              },
+              {
+                loader: 'postcss-loader',
+                options: {
+                  ident: 'postcss',
+                  plugins: [
+                    // postcss-cssnext 已经包含autoprefixer所以要注释
+                    // require('autoprefixer')(),
+                    require('postcss-sprites')({
+                      //spritePath: 'dist/assets/imgs/sprites'
+                    }),
+                    require('postcss-cssnext')()
+                  ]
+                }
+              },            
+              {
+                loader: 'less-loader'
+              }
+            ]
+
+          })
+        },
+        {
+          test: /\.js$/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: ['@babel/preset-env'],
+                plugins: [
+                  'lodash',
+                  // 'dynamic-import-webpack'
+                ]
+              },
+            }
+          ],
+          exclude: /node_modules/
+        },
+        {
+          test: /\.(jpe?g|png|gif|svg)$/i,
+          use: [
+            // 'url-loader?limit=1000',
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 1000,
+                name: '[name]-[hash:5].[ext][hash:4]',
+                // publicPath: '/assets/imgs/',
+                // outputPath: '/assets/imgs/',
+                useRelativePath: true
+              }
+            },
+            {
+              loader: 'img-loader',
+              options: {
+
+                plugins: [
+                  require('imagemin-pngquant')({
+                    floyd: 0.5,
+                    speed: 2
+                  }),
+                ]
+              }
+            }
+          ]
+        },
+        {
+          test: /\.(eot|woff2?|ttf|svg)$/,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {
+                limit: 5000,
+                name: '[name]-[hash:5].[ext]?[hash:4]',
+                // publicPath: '/assets/fonts/',
+                // outputPath: '/assets/fonts/',
+                useRelativePath: true
+              }
+            }
+          ]
+        },
+        {
+          test: path.resolve(__dirname, 'src/app.js'),
+          use: [
+            {
+              loader: 'imports-loader',
+              options: {
+                $: 'jquery'
+              }
+            }
+          ]
+        },
+        {
+          test: /\.html$/,
+          use: [
+            {
+              loader: 'html-loader',
+              options: {
+                // 默认使用img:src
+                attrs: ['img:src', 'img:data-src']
+              }
+            }
+          ]
+        },     
+      ]
+    },
+
+    // 自定义JS库
+    resolve: {
+      alias: {
+        // jquery必须与 下面的webpack.ProvidePlugin 名称一致
+        // 告诉webpack 在哪里找到 jquery
+        jquery$: path.resolve(__dirname, 'src/libs/jquery.min.js')
+      }
+    },
+
+    plugins: [
+      new ExtractTextWebpackPlugin({
+        filename: 'css/[name]-bundle.[hash:5].css', // 打包之后的名字
+        allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+      }),
+
+      new PurifyCSS({
+        paths: glob.sync([ // 传入多文件路径
+          path.join(__dirname, './*.html'), // 处理根目录下的html文件
+          path.join(__dirname, './src/*.js') // 处理src目录下的js文件
+        ])
+      }),
+
+      new HtmlInlineChunkPlugin({
+        inlineChunks: ['manifest']
+      }),
+
+      new HtmlWebpackPlugin({
+        filename: 'index.html',  // 指定生成的文件路径
+        template: './index.html',  // 模板文件
+        // inject: false // 只有手动载入的资源，不会自动插入打包的资源
+        // chunks: [
+        //   'app'
+        // ],
+        minify: {
+          collapseWhitespace: true       // 压缩html,借助html-minify包
+        }
+      }),
+
+
+      new webpack.optimize.CommonsChunkPlugin({
+        name: 'manifest'
+      }),
+
+      // 使用npm加载
+      // new webpack.ProvidePlugin({
+      //   $: 'jquery'
+      // }),
+
+      // 打包时，在库中没有用到的代码移除
+      new webpack.optimize.UglifyJsPlugin(),
+      
+      // 指定剔除的目录
+      new CleanWebpackPlugin(['dist'])
+    ]
+  }
+$ npm run server
+```
+
+### 模块热更新
+
+- module hot reloading
+
+- 保持应用的数据状态
+- 节省调试时间
+- 样式调试更快
+
+- devServer.hot
+- webpack.HotModuleReplacementPlugin
+- webpack.NamedModulesPlugin 模块的相对路径
+
+- module.hot
+- module.hot.accept 模块热更新的时候需要
+- module.hot.decline
+
+```sh
+$ vim app.js
+import base from './css/base.less'
+// import { renderA } from './components/a'
+import { componentA } from './components/a'
+
+var app = document.getElementById('app')
+var one = document.getElementById('one')
+var div = document.createElement('div')
+div.className = 'littleBox'
+app.appendChild(div)
+
+var list = componentA()
+one.appendChild(list)
+
+$('div').addClass('new')
+
+import { a } from './common/utils'
+console.log(a())
+
+import { chunk } from 'lodash-es'
+console.log(chunk([1,2,3,4,5,6,7,8,9], 2))
+
+// var url = 'https://weibo.com/aj/v6/comment/big'
+var url = '/aj/v6/comment/big'
+var url = '/list'
+$.get(url, {
+  // ajwvr:6,
+  // id: '4180778570984558',
+  // from: 'singleWeiBo',
+  // __rnd: '1549249279861'
+}, function (data) {
+  console.log(data)
+})
+
+$.get('/msg/index', {
+  format: 'cards'
+}, function (data) {
+  console.log(data)
+})
+
+// renderA()
+
+
+
+// 强制js热更新
+if(module.hot) {
+  // module.hot.accept()
+  module.hot.accept('./components/a', function () {
+    one.removeChild(list)
+    let ComponentA = require('./components/a').componentA
+    let newList = ComponentA()
+    one.appendChild(newList)
+    list = newList
+  })
+}
+
+$ vim webpack.config.js
+
+var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+var webpack = require('webpack')
+var PurifyCSS = require('purifycss-webpack')
+var HtmlWebpackPlugin = require('html-webpack-plugin')
+var HtmlInlineChunkPlugin = require('html-webpack-inline-chunk-plugin') // 提前载入 webpack 加载代码
+var CleanWebpackPlugin = require('clean-webpack-plugin')
+
+var path = require('path')
+var glob = require('glob-all')
+
+module.exports = {
+  entry: {
+    app: './src/app.js'
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    // publicPath: 'dist/',
+    publicPath: '/',
+    filename: 'js/[name].bundle.[hash:5].js',
+    chunkFilename: '[name].bundle.js' // 动态输出文件名
+  },
+
+  devServer: {
+    port: 9001,
+    // inline: true, // 默认 true，false: 页面顶部显示打包状态
+    // historyApiFallback: true, // 不存在页面重定向到入口页面
+    proxy: {
+      '/': {
+        target: 'https://m.weibo.cn',
+        changeOrigin: true,
+        logLevel: 'debug', // 查看接口信息
+        pathRewrite: {
+          '^/list': '/api/config/list'
+        },
+        // /msg/index接口提示登录；需要cookie
+        headers: {
+          'Cookie': '_T_WM=38eac7ad57aa8e1a09f31d501361ba81; WEIBOCN_FROM=1110006030; SUB=_2A25xU8KMDeRhGeBN7FYS8S_Owz2IHXVSv-7ErDV6PUJbkdAKLXP4kW1NRC6B-R19Vyec-ZtFvf4uiRTGO_bIZmvT; SUHB=0tKqRAVnkzFzq7; MLOGIN=1; XSRF-TOKEN=8aaf35; M_WEIBOCN_PARAMS=lfid%3D102803%26luicode%3D20000174%26uicode%3D20000174'
+        }
+      }
+    },
+    hot: true,
+    hotOnly: true,
+    historyApiFallback: {
+      rewrites: [
+        {
+          // from: '/pages/a',
+          // to: '/pages/a.html'
+          from: /^\/([a-zA-Z0-9]+\/?)([a-zA-Z0-9]+)/,
+          to: function (context) {
+            return '/' + context.match[1] + context.match[2] + '.html'
+          }
+        }
+      ]
+    }
+  },
+
+  module: {
+    rules: [
+      // {
+      //   test: /\.less$/,
+      //   use: ExtractTextWebpackPlugin.extract({
+      //     fallback: {
+      //       loader: 'style-loader',
+      //       options: {
+      //         // insertInto: '#app', // style插入到#app元素下
+      //         singleton: true, // 仅显示一个style标签
+      //       }            
+      //     },
+      //     use: [
+      //       {
+      //         loader: 'css-loader',
+      //         options: {
+      //           minimize: true, //压缩css代码, 默认false
+      //           // modules: true, //开启css-modules模式, 默认值为flase
+      //           // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+      //         }
+      //       },
+      //       {
+      //         loader: 'postcss-loader',
+      //         options: {
+      //           ident: 'postcss',
+      //           plugins: [
+      //             // postcss-cssnext 已经包含autoprefixer所以要注释
+      //             // require('autoprefixer')(),
+      //             require('postcss-sprites')({
+      //               //spritePath: 'dist/assets/imgs/sprites'
+      //             }),
+      //             require('postcss-cssnext')()
+      //           ]
+      //         }
+      //       },            
+      //       {
+      //         loader: 'less-loader'
+      //       }
+      //     ]
+
+      //   })
+      // },
+      {
+        test: /\.less$/,
+        use:  [
+          {
+            loader: 'style-loader',
+            options: {
+              // insertInto: '#app', // style插入到#app元素下
+              singleton: true, // 仅显示一个style标签
+            }
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              minimize: true, //压缩css代码, 默认false
+              // modules: true, //开启css-modules模式, 默认值为flase
+              // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+            }
+          },          
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              plugins: [
+                // postcss-cssnext 已经包含autoprefixer所以要注释
+                // require('autoprefixer')(),
+                require('postcss-sprites')({
+                  //spritePath: 'dist/assets/imgs/sprites'
+                }),
+                require('postcss-cssnext')()
+              ]
+            }
+          }, 
+          {
+            loader: 'less-loader'
+          }
+        ]
+      },
+      {
+        test: /\.js$/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: ['@babel/preset-env'],
+              plugins: [
+                'lodash',
+                // 'dynamic-import-webpack'
+              ]
+            },
+          }
+        ],
+        exclude: /node_modules/
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        use: [
+          // 'url-loader?limit=1000',
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 1000,
+              name: '[name]-[hash:5].[ext][hash:4]',
+              // publicPath: '/assets/imgs/',
+              // outputPath: '/assets/imgs/',
+              useRelativePath: true
+            }
+          },
+          {
+            loader: 'img-loader',
+            options: {
+
+              plugins: [
+                require('imagemin-pngquant')({
+                  floyd: 0.5,
+                  speed: 2
+                }),
+              ]
+            }
+          }
+        ]
+      },
+      {
+        test: /\.(eot|woff2?|ttf|svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 5000,
+              name: '[name]-[hash:5].[ext]?[hash:4]',
+              // publicPath: '/assets/fonts/',
+              // outputPath: '/assets/fonts/',
+              useRelativePath: true
+            }
+          }
+        ]
+      },
+      {
+        test: path.resolve(__dirname, 'src/app.js'),
+        use: [
+          {
+            loader: 'imports-loader',
+            options: {
+              $: 'jquery'
+            }
+          }
+        ]
+      },
+      {
+        test: /\.html$/,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              // 默认使用img:src
+              attrs: ['img:src', 'img:data-src']
+            }
+          }
+        ]
+      },     
+    ]
+  },
+
+  // 自定义JS库
+  resolve: {
+    alias: {
+      // jquery必须与 下面的webpack.ProvidePlugin 名称一致
+      // 告诉webpack 在哪里找到 jquery
+      jquery$: path.resolve(__dirname, 'src/libs/jquery.min.js')
+    }
+  },
+
+  plugins: [
+    new ExtractTextWebpackPlugin({
+      filename: 'css/[name]-bundle.[hash:5].css', // 打包之后的名字
+      allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+    }),
+
+    new PurifyCSS({
+      paths: glob.sync([ // 传入多文件路径
+        path.join(__dirname, './*.html'), // 处理根目录下的html文件
+        path.join(__dirname, './src/*.js') // 处理src目录下的js文件
+      ])
+    }),
+
+    new HtmlInlineChunkPlugin({
+      inlineChunks: ['manifest']
+    }),
+
+    new HtmlWebpackPlugin({
+      filename: 'index.html',  // 指定生成的文件路径
+      template: './index.html',  // 模板文件
+      // inject: false // 只有手动载入的资源，不会自动插入打包的资源
+      // chunks: [
+      //   'app'
+      // ],
+      minify: {
+        collapseWhitespace: true       // 压缩html,借助html-minify包
+      }
+    }),
+
+
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest'
+    }),
+
+    // 使用npm加载
+    // new webpack.ProvidePlugin({
+    //   $: 'jquery'
+    // }),
+
+    // 打包时，在库中没有用到的代码移除
+    new webpack.optimize.UglifyJsPlugin(),
+    
+    // 指定剔除的目录
+    new CleanWebpackPlugin(['dist']),
+
+    // 模块热更新效果
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NamedModulesPlugin()
+  ]
+}
+
+$ vim src/components/a.js
+import '../css/components/a.less'
+
+export function renderA () {
+  let a = document.getElementById('one')
+  a.innerHTML = `
+    <ul>
+      <li>1-one</li>
+      <li>2-two</li>
+      <li>3</li>
+    </ul>
+  `
+}
+export function componentA () {
+  let ul = document.createElement('ul')
+  ul.innerHTML = `
+    <ul>
+      <li>one-1111</li>
+      <li>two</li>
+      <li>three</li>
+    </ul>
+  `
+  return ul
+}
+$ npm run server
+```
+
+## source map 调试
+
+- js source map
+- css source map
+
+### 配置source map调试方法
+
+1. Devtool
+2. webpack.SourceMapDevToolPlugin
+  webpack.EvalSourceMapDevToolPlugin
+
+- development
+  - eval
+  - eval-source-map
+  - cheap-eval-source-map
+  - cheap-module-eval-source-map
+- production
+  - source-map
+  - hidden-source-map
+  - nosource-source-map
+
+- css source map
+  - css-loader.option.sourcemap
+  - less-loader.option.sourcemap
+  - sass-loader.option.sourcemap
+
+```sh
+$ vim webpack.config.js
+  ...
+  devtool: 'eval'
+  ...
+$ npm run server
+```
+
+```sh
+$ vim webpack.config.js
+  ...
+  devtool: 'source-map'
+  ...
+  // new webpack.optimize.UglifyJsPlugin(),
+```
+
+牺牲性能，调试方便
+```sh
+$ vim webpack.config.js
+  devtool: 'cheap-module-source-map'
+```
+刚开始编译慢，之后编译快
+
+### CSS-source-map
+
+```sh
+$ vim webpack.config.js
+var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+var webpack = require('webpack')
+var PurifyCSS = require('purifycss-webpack')
+var HtmlWebpackPlugin = require('html-webpack-plugin')
+var HtmlInlineChunkPlugin = require('html-webpack-inline-chunk-plugin') // 提前载入 webpack 加载代码
+var CleanWebpackPlugin = require('clean-webpack-plugin')
+
+var path = require('path')
+var glob = require('glob-all')
+
+module.exports = {
+  entry: {
+    app: './src/app.js'
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    // publicPath: 'dist/',
+    publicPath: '/',
+    filename: 'js/[name].bundle.[hash:5].js',
+    chunkFilename: '[name].bundle.js' // 动态输出文件名
+  },
+  // devtool: 'eval',
+  devtool: 'source-map',
+  devServer: {
+    port: 9001,
+    // inline: true, // 默认 true，false: 页面顶部显示打包状态
+    // historyApiFallback: true, // 不存在页面重定向到入口页面
+    proxy: {
+      '/': {
+        target: 'https://m.weibo.cn',
+        changeOrigin: true,
+        logLevel: 'debug', // 查看接口信息
+        pathRewrite: {
+          '^/list': '/api/config/list'
+        },
+        // /msg/index接口提示登录；需要cookie
+        headers: {
+          'Cookie': '_T_WM=38eac7ad57aa8e1a09f31d501361ba81; WEIBOCN_FROM=1110006030; SUB=_2A25xU8KMDeRhGeBN7FYS8S_Owz2IHXVSv-7ErDV6PUJbkdAKLXP4kW1NRC6B-R19Vyec-ZtFvf4uiRTGO_bIZmvT; SUHB=0tKqRAVnkzFzq7; MLOGIN=1; XSRF-TOKEN=8aaf35; M_WEIBOCN_PARAMS=lfid%3D102803%26luicode%3D20000174%26uicode%3D20000174'
+        }
+      }
+    },
+    hot: true,
+    hotOnly: true,
+    historyApiFallback: {
+      rewrites: [
+        {
+          // from: '/pages/a',
+          // to: '/pages/a.html'
+          from: /^\/([a-zA-Z0-9]+\/?)([a-zA-Z0-9]+)/,
+          to: function (context) {
+            return '/' + context.match[1] + context.match[2] + '.html'
+          }
+        }
+      ]
+    }
+  },
+
+  module: {
+    rules: [
+      // {
+      //   test: /\.less$/,
+      //   use: ExtractTextWebpackPlugin.extract({
+      //     fallback: {
+      //       loader: 'style-loader',
+      //       options: {
+      //         // insertInto: '#app', // style插入到#app元素下
+      //         singleton: true, // 仅显示一个style标签
+      //       }            
+      //     },
+      //     use: [
+      //       {
+      //         loader: 'css-loader',
+      //         options: {
+      //           minimize: true, //压缩css代码, 默认false
+      //           // modules: true, //开启css-modules模式, 默认值为flase
+      //           // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+      //         }
+      //       },
+      //       {
+      //         loader: 'postcss-loader',
+      //         options: {
+      //           ident: 'postcss',
+      //           plugins: [
+      //             // postcss-cssnext 已经包含autoprefixer所以要注释
+      //             // require('autoprefixer')(),
+      //             require('postcss-sprites')({
+      //               //spritePath: 'dist/assets/imgs/sprites'
+      //             }),
+      //             require('postcss-cssnext')()
+      //           ]
+      //         }
+      //       },            
+      //       {
+      //         loader: 'less-loader'
+      //       }
+      //     ]
+
+      //   })
+      // },
+      {
+        test: /\.less$/,
+        use:  [
+          {
+            loader: 'style-loader',
+            options: {
+              // insertInto: '#app', // style插入到#app元素下
+              // singleton: true, // 仅显示一个style标签
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              minimize: true, //压缩css代码, 默认false
+              sourceMap: true
+              // modules: true, //开启css-modules模式, 默认值为flase
+              // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+            }
+          },          
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: [
+                // postcss-cssnext 已经包含autoprefixer所以要注释
+                // require('autoprefixer')(),
+                // require('postcss-sprites')({
+                //   //spritePath: 'dist/assets/imgs/sprites'
+                // }),
+                require('postcss-cssnext')()
+              ]
+            }
+          }, 
+          {
+            loader: 'less-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.js$/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: ['@babel/preset-env'],
+              plugins: [
+                'lodash',
+                // 'dynamic-import-webpack'
+              ]
+            },
+          }
+        ],
+        exclude: /node_modules/
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        use: [
+          // 'url-loader?limit=1000',
+          {
+            loader: 'file-loader',
+            options: {
+              publicPath: '',
+              outputPath: 'dist/',
+              useRelativePath: true
+            }
+          }
+          // {
+          //   loader: 'url-loader',
+          //   options: {
+          //     limit: 1000,
+          //     name: '[name]-[hash:5].[ext][hash:4]',
+          //     // publicPath: '/assets/imgs/',
+          //     // outputPath: '/assets/imgs/',
+          //     useRelativePath: true
+          //   }
+          // },
+          // {
+          //   loader: 'img-loader',
+          //   options: {
+
+          //     plugins: [
+          //       require('imagemin-pngquant')({
+          //         floyd: 0.5,
+          //         speed: 2
+          //       }),
+          //     ]
+          //   }
+          // }
+        ]
+      },
+      {
+        test: /\.(eot|woff2?|ttf|svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 5000,
+              name: '[name]-[hash:5].[ext]?[hash:4]',
+              // publicPath: '/assets/fonts/',
+              // outputPath: '/assets/fonts/',
+              useRelativePath: true
+            }
+          }
+        ]
+      },
+      {
+        test: path.resolve(__dirname, 'src/app.js'),
+        use: [
+          {
+            loader: 'imports-loader',
+            options: {
+              $: 'jquery'
+            }
+          }
+        ]
+      },
+      {
+        test: /\.html$/,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              // 默认使用img:src
+              attrs: ['img:src', 'img:data-src']
+            }
+          }
+        ]
+      },     
+    ]
+  },
+
+  // 自定义JS库
+  resolve: {
+    alias: {
+      // jquery必须与 下面的webpack.ProvidePlugin 名称一致
+      // 告诉webpack 在哪里找到 jquery
+      jquery$: path.resolve(__dirname, 'src/libs/jquery.min.js')
+    }
+  },
+
+  plugins: [
+    new ExtractTextWebpackPlugin({
+      filename: 'css/[name]-bundle.[hash:5].css', // 打包之后的名字
+      allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+    }),
+
+    new PurifyCSS({
+      paths: glob.sync([ // 传入多文件路径
+        path.join(__dirname, './*.html'), // 处理根目录下的html文件
+        path.join(__dirname, './src/*.js') // 处理src目录下的js文件
+      ])
+    }),
+
+    new HtmlInlineChunkPlugin({
+      inlineChunks: ['manifest']
+    }),
+
+    new HtmlWebpackPlugin({
+      filename: 'index.html',  // 指定生成的文件路径
+      template: './index.html',  // 模板文件
+      // inject: false // 只有手动载入的资源，不会自动插入打包的资源
+      // chunks: [
+      //   'app'
+      // ],
+      minify: {
+        collapseWhitespace: true       // 压缩html,借助html-minify包
+      }
+    }),
+
+
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest'
+    }),
+
+    // 使用npm加载
+    // new webpack.ProvidePlugin({
+    //   $: 'jquery'
+    // }),
+
+    // 打包时，在库中没有用到的代码移除
+    // new webpack.optimize.UglifyJsPlugin(),
+    
+    // 指定剔除的目录
+    new CleanWebpackPlugin(['dist']),
+
+    // 模块热更新效果
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NamedModulesPlugin()
+  ]
+}
+```
+
+## Eslint 检查代码格式
+
+- eslint
+- eslint-loader
+  - options.failOnWarning
+  - options.failOnError
+  - options.formatter
+  - options.outputReport
+- eslint-plugin-html html的script检查
+- eslint-friendly-formatter 报错输出格式
+
+### 配置 eslint
+
+- webpack config
+- .eslintrc.*
+- package.json 中的 eslintConfig
+
+- JavaScript Standard Style(https://standardjs.com/)
+- eslint-config-standard
+- eslint-plugin-promise
+- eslint-plugin-standard
+- eslint-plugin-import
+- eslint-plugin-node
+- eslint-cofnig-xxx
+
+- `devServer.overlay`
+
+```sh
+$ npm i eslint eslint-loader eslint-plugin-html eslint-friendly-formatter -D
+$ cnpm i eslint-config-standard eslint-plugin-promise eslint-plugin-node eslint-plugin-import eslint-plugin-standard -D
+$ vim webpack.config.js
+    var ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
+  var webpack = require('webpack')
+  var PurifyCSS = require('purifycss-webpack')
+  var HtmlWebpackPlugin = require('html-webpack-plugin')
+  var HtmlInlineChunkPlugin = require('html-webpack-inline-chunk-plugin') // 提前载入 webpack 加载代码
+  var CleanWebpackPlugin = require('clean-webpack-plugin')
+
+  var path = require('path')
+  var glob = require('glob-all')
+
+  module.exports = {
+  entry: {
+    app: './src/app.js'
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    // publicPath: 'dist/',
+    publicPath: '/',
+    filename: 'js/[name].bundle.[hash:5].js',
+    chunkFilename: '[name].bundle.js' // 动态输出文件名
+  },
+  // devtool: 'eval',
+  devtool: 'source-map',
+  devServer: {
+    port: 9001,
+    // inline: true, // 默认 true，false: 页面顶部显示打包状态
+    // historyApiFallback: true, // 不存在页面重定向到入口页面
+    proxy: {
+      '/': {
+        target: 'https://m.weibo.cn',
+        changeOrigin: true,
+        logLevel: 'debug', // 查看接口信息
+        pathRewrite: {
+          '^/list': '/api/config/list'
+        },
+        // /msg/index接口提示登录；需要cookie
+        headers: {
+          'Cookie': '_T_WM=38eac7ad57aa8e1a09f31d501361ba81; WEIBOCN_FROM=1110006030; SUB=_2A25xU8KMDeRhGeBN7FYS8S_Owz2IHXVSv-7ErDV6PUJbkdAKLXP4kW1NRC6B-R19Vyec-ZtFvf4uiRTGO_bIZmvT; SUHB=0tKqRAVnkzFzq7; MLOGIN=1; XSRF-TOKEN=8aaf35; M_WEIBOCN_PARAMS=lfid%3D102803%26luicode%3D20000174%26uicode%3D20000174'
+        }
+      }
+    },
+    hot: true,
+    hotOnly: true,
+    historyApiFallback: {
+      rewrites: [
+        {
+          // from: '/pages/a',
+          // to: '/pages/a.html'
+          from: /^\/([a-zA-Z0-9]+\/?)([a-zA-Z0-9]+)/,
+          to: function (context) {
+            return '/' + context.match[1] + context.match[2] + '.html'
+          }
+        }
+      ]
+    }
+  },
+
+  module: {
+    rules: [
+      // {
+      //   test: /\.less$/,
+      //   use: ExtractTextWebpackPlugin.extract({
+      //     fallback: {
+      //       loader: 'style-loader',
+      //       options: {
+      //         // insertInto: '#app', // style插入到#app元素下
+      //         singleton: true, // 仅显示一个style标签
+      //       }            
+      //     },
+      //     use: [
+      //       {
+      //         loader: 'css-loader',
+      //         options: {
+      //           minimize: true, //压缩css代码, 默认false
+      //           // modules: true, //开启css-modules模式, 默认值为flase
+      //           // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+      //         }
+      //       },
+      //       {
+      //         loader: 'postcss-loader',
+      //         options: {
+      //           ident: 'postcss',
+      //           plugins: [
+      //             // postcss-cssnext 已经包含autoprefixer所以要注释
+      //             // require('autoprefixer')(),
+      //             require('postcss-sprites')({
+      //               //spritePath: 'dist/assets/imgs/sprites'
+      //             }),
+      //             require('postcss-cssnext')()
+      //           ]
+      //         }
+      //       },            
+      //       {
+      //         loader: 'less-loader'
+      //       }
+      //     ]
+
+      //   })
+      // },
+      {
+        test: /\.less$/,
+        use:  [
+          {
+            loader: 'style-loader',
+            options: {
+              // insertInto: '#app', // style插入到#app元素下
+              // singleton: true, // 仅显示一个style标签
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              minimize: true, //压缩css代码, 默认false
+              sourceMap: true
+              // modules: true, //开启css-modules模式, 默认值为flase
+              // localIdentName: '[path][name]_[local]_[hash:base64:5]', //设置css-modules模式下local类名的命名
+            }
+          },          
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: [
+                // postcss-cssnext 已经包含autoprefixer所以要注释
+                // require('autoprefixer')(),
+                // require('postcss-sprites')({
+                //   //spritePath: 'dist/assets/imgs/sprites'
+                // }),
+                require('postcss-cssnext')()
+              ]
+            }
+          }, 
+          {
+            loader: 'less-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.js$/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: ['@babel/preset-env'],
+              plugins: [
+                'lodash',
+                // 'dynamic-import-webpack'
+              ]
+            },
+          },
+          {
+            loader: 'eslint-loader',
+            options: {
+              formatter: require('eslint-friendly-formatter')
+            }
+          }
+        ],
+        exclude: /node_modules/
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        use: [
+          // 'url-loader?limit=1000',
+          {
+            loader: 'file-loader',
+            options: {
+              publicPath: '',
+              outputPath: 'dist/',
+              useRelativePath: true
+            }
+          }
+          // {
+          //   loader: 'url-loader',
+          //   options: {
+          //     limit: 1000,
+          //     name: '[name]-[hash:5].[ext][hash:4]',
+          //     // publicPath: '/assets/imgs/',
+          //     // outputPath: '/assets/imgs/',
+          //     useRelativePath: true
+          //   }
+          // },
+          // {
+          //   loader: 'img-loader',
+          //   options: {
+
+          //     plugins: [
+          //       require('imagemin-pngquant')({
+          //         floyd: 0.5,
+          //         speed: 2
+          //       }),
+          //     ]
+          //   }
+          // }
+        ]
+      },
+      {
+        test: /\.(eot|woff2?|ttf|svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 5000,
+              name: '[name]-[hash:5].[ext]?[hash:4]',
+              // publicPath: '/assets/fonts/',
+              // outputPath: '/assets/fonts/',
+              useRelativePath: true
+            }
+          }
+        ]
+      },
+      {
+        test: path.resolve(__dirname, 'src/app.js'),
+        use: [
+          {
+            loader: 'imports-loader',
+            options: {
+              $: 'jquery'
+            }
+          }
+        ]
+      },
+      {
+        test: /\.html$/,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              // 默认使用img:src
+              attrs: ['img:src', 'img:data-src']
+            }
+          }
+        ]
+      },     
+    ]
+  },
+
+  // 自定义JS库
+  resolve: {
+    alias: {
+      // jquery必须与 下面的webpack.ProvidePlugin 名称一致
+      // 告诉webpack 在哪里找到 jquery
+      jquery$: path.resolve(__dirname, 'src/libs/jquery.min.js')
+    }
+  },
+
+  plugins: [
+    new ExtractTextWebpackPlugin({
+      filename: 'css/[name]-bundle.[hash:5].css', // 打包之后的名字
+      allChunks: false // 提取指定范围 默认是false 提取初始化的, 异步加载不认为初始化的, true: 所有import的都提取
+    }),
+
+    new PurifyCSS({
+      paths: glob.sync([ // 传入多文件路径
+        path.join(__dirname, './*.html'), // 处理根目录下的html文件
+        path.join(__dirname, './src/*.js') // 处理src目录下的js文件
+      ])
+    }),
+
+    new HtmlInlineChunkPlugin({
+      inlineChunks: ['manifest']
+    }),
+
+    new HtmlWebpackPlugin({
+      filename: 'index.html',  // 指定生成的文件路径
+      template: './index.html',  // 模板文件
+      // inject: false // 只有手动载入的资源，不会自动插入打包的资源
+      // chunks: [
+      //   'app'
+      // ],
+      minify: {
+        collapseWhitespace: true       // 压缩html,借助html-minify包
+      }
+    }),
+
+
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest'
+    }),
+
+    // 使用npm加载
+    // new webpack.ProvidePlugin({
+    //   $: 'jquery'
+    // }),
+
+    // 打包时，在库中没有用到的代码移除
+    // new webpack.optimize.UglifyJsPlugin(),
+
+    // 指定剔除的目录
+    new CleanWebpackPlugin(['dist']),
+
+    // 模块热更新效果
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NamedModulesPlugin()
+  ]
+  }
+
+$ vim .eslintrc.js
+  module.exports = {
+    root: true,
+    extends: 'standard',
+    plugins: [],
+    env: {
+      browser: true,
+      node: true
+    },
+    rules: {}
+  }
+$ npm run server
+```
+
+## 开发环境和生产环境
+
+- 开发环境
+  - 模块热更新
+  - sourceMap
+  - 接口代理
+  - 代码规范检查
+- 生产环境
+  - 提取公用代码
+  - 压缩混淆
+  - 文件压缩 或是 Base64编码
+  - 去除无用的代码
+- 共同点
+  - 同样的入口
+  - 同样的代码处理（loader）
+  - 同样的解析配置
+
+- 如何做？
+  - webpack-merge 包
+  - webpack.dev.conf.js
+  - webpack.prod.conf.js
+  - webpack.common.conf.js
+
+```sh
+$ npm i webpack-merge -D
+```
+
+## middleware 搭建开发环境
+
+- Express or koa
+- webpack-dev-middleware
+- webpack-hot-middleware
+- http-proxy-middleware
+- connect-history-api-fallback
+- opn
+
+```sh
+$ cnpm i express opn webpack-dev-middleware webpack-hot-middleware http-proxy-middleware connect-history-api-fallback --save-dev
+$ vim build/server.js
+```
+
+## 打包结果分析
+
+- Offical Analyse Tool
+- webpack-bundle-analyzer
+
+- mac: `webpack --profile --json > stats.json`
+
+- windows(powershell): `webpack --profile --json | Out-file 'stats.json' -Encoding OEM`
+
+stats.json文件内容复制到 http://webpack.github.io/analyse/
+
+- 社区：`webpack-bundle-analyzer`
+  - 插件：`BundleAnalyzerPlugin`
+  - 命令行：`webpack-bundle-analyzer stats.json`
+
+```sh
+$ npm i webpack-bundle-analyzer --save-dev
+$ webpack --display-modules
+$ vim webpack.config.js
+  var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
+  ...
+  new BundleAnalyzerPlugin()
+  ...
+$ webpack
+```
+
+## 打包速度优化
+
+- 打包速度因素
+  - 文件多
+  - 依赖多
+  - 页面多
+
+- 办法1
+  - 分开 vendor(第三方代码) 和 app(业务代码)
+  - DllPlugin
+  - DllReferencePlugin
+- 办法2
+  - UglifyJsPlugin
+    - parallel
+    - cache
+- 办法3
+  - HappyPack (串行变成并行，for loader)
+  - HappyPack.ThreadPool
+- 办法4
+  - babel-loader
+    - options.cacheDirectory
+    - include
+    - exclude
+- 其他
+  - 减少 resolve
+  - Devtool: 去除 sourcemap
+  - cache-loader
+  - 升级 node
+  - 升级 webpack
+
+```sh
+$ vue init webapck vue_bundle
+$ cd vue_bundle
+$ npm i element-ui --save
+$ vim main.js
+  import { Button, Select } from 'element-ui'
+  
+  Vue.comonent(Button.name, Button)
+  Vue.comonent(Select.name, Select)
+$ npm run build
+  查看打包时间
+  首先第三方依赖于业务代码分开
+
+第三方依赖打包配置文件
+$ vim build/webpack.dll.conf.js
+  const path = require('path')
+  const webpack = require('webpack')
+
+  module.export = {
+    entry: {
+      vue: [
+        'vue',
+        'vue-router'
+      ],
+      ui: [
+        'element-ui'
+      ],
+
+      output: {
+        // 第三方打包生成目录
+        path: path.join(__dirname, '../src/dll/'),
+        filename: '[name].dll.js',
+        library: '[name]' // 引用第三方库的方式，怎么引用第三方库，vue或element全局变量
+      },
+
+      plugins: [
+        new webpack.DllPlugin({
+          // 打包生成目录
+          path: path.join(__dirname, '../src/ddl/', '[name]-manifest.json'),
+          name: '[name]'
+        }),
+
+        // dll文件uglify
+        new webpack.optimize.UglifyJsPlugin()
+      ]
+    }
+  }
+$ webpack --config build/webpack.dll.conf.js
+    ui.dll.js
+    vue.dll.js
+$ ls src/dll
+  ui-manifest.json
+  ui.dll.js
+  vue-manifest.json
+  vue.dll.js
+
+$ vim build/webpack.prod.conf.js
+  plugins: [
+    new webpack.DllReferencePlugin({
+      manifest: require('../src/dll/ui-manifest.json')
+    }),
+    new webpack.DllReferencePlugin({
+      manifest: require('../src/dll/vue-manifest.json')
+    }),
+    ...
+  ]
+$ npm run build
+  观察打包时间
+  已经把第三方包，单独的打过一次
+  这次打包是src业务代码，所以非常快。
+  通过分离第三方库和业务代码，加快打包速度
+```
+
+- 第二种方法：平行处理
+
+```sh
+$ vim build/webpack.base.conf.js
+  loader: 'babel-loader',
+  include: [resolve('src')] // babel执行范围
+
+$ vim build/webpack.prod.conf.js
+  new uglifyJsPlugin({
+    uglifyOptions: {
+      compress: {
+        warnings: false
+      }
+    },
+    sourceMap: config.build.productionSourceMap,
+    parallel: true,
+    cache: true
+  })
+$ vim config/index.js
+  productionSourceMap: false
+$ npm run build
+  平行处理和去掉sourceMap
+
+其他办法(happypack 并行处理loader)
+$ npm i happypack --save-dev
+$ vim build/webpack.base.conf.js
+  loader: 'vue-loader'改成
+  loader: 'happypack/loader?id=vue'
+  去掉otions: vueLoaderConfig
+$ vim biuld/webpack.prod.conf.js
+  const HappyPack = require('happypack')
+  plubins: [
+    new HappyPack({
+      id: 'vue',
+      loaders: [{
+        loader: 'vue-loader',
+        option: require('./vue-loader.conf')
+      }]
+    })
+  ]
+$ npm run build
+  打包时间更长
+  项目太小不建议使用happypack
+```
+
+## 长缓存优化
+
+- 什么是长缓存优化
+  - 1. 浏览器访问也main
+  - 2. 服务器控制http协议的响应头，告诉浏览器这些资源在某一个期间不用更新它；这些资源自己的版本号(js或css)；当这些资源不改变的时候，不会再次发起请求；较少用户访问网页时间
+  - 3. 目的：如果代码更新，更新请求；如果没有更新，继续使用缓存文件
+- 为什么需要长缓存？
+- 怎么做？
+
+### 长缓存优化场景
+
+- 场景： 改变 app 代码，vendor 变化
+- 解决：
+  - 提取vendor
+  - hash => chunkhash 文件哈希换成代码块哈希
+  - 提取 webpack runtime
+
+```sh
+$ vim src/foo.js
+  import react from 'react'
+  console.log('hello world')
+$ vim webpack.config.js
+  const path = require('path')
+  const webpack = require('webpack')
+
+  module.exports = {
+    entry: {
+      main: './src/foo', // app
+      vendor: ['react'] // vendor
+    },
+
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].[chunkhash].js'
+    }
+  }
+
+$ webpack
+  vendor.0x111.js
+  main.0x111.js
+$ vim webpack.config.js
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor', // 指向 vendor: ['react']
+      minChunks: infinity
+    })
+  ]
+$ webpack
+  main.xxxx.js 业务代码
+  vendor.x1x1x1.js 第三方代码
+$ vim src/foo.js
+  hello world改成 hi
+$ webpack
+  main.xxxx.js 业务代码
+  vendor.x3x3x3.js 第三方代码块又变化？什么鬼？提取webpack runtime
+$ vim webpack.config.js
+  new webpack.optimize.CommonsChunkPlugin({
+    name: 'manifest' // 没有entry的名称；提取webpack runtime
+  })
+$ webpack
+  vendor.xxx1
+  main.xxx2
+  manifest.xx3
+$ vim src/foo.js
+  hi改成 good morning
+$ webpack
+  vendor.xxx1 react库没有变化
+  main.xxx4 业务代码变化
+  manifest.xx5 重新打包，所有变化 
+```
+
+另一个场景：引入新模块，模块顺序变化，vendor hash 变化
+
+```sh
+$ vim src/foo.js
+  ...
+  import module from './module'
+  ...
+$ vim src/module.js
+  export default 'this is module'
+$ webpack
+  vendor 发生变化了？没有修改第三方库，怎么又变化？
+
+原因：chunk id变化，chunkhash值也会变化
+解决：不给chunk id，指定名字
+  NamedChunksPlugin
+  NamedModulesPlugin
+$ vim webpack.config.js
+  new webpack.NamedChunksPlugin(),
+  ...
+$ webpack
+  Asset         Chunks
+  main.xx       main
+  manifest.xx   manifest
+  vendor.xx     vendor
+  ./src/foo.js .... {main} [build]
+  ./src/module.js ... {main} [built]
+  multi react ... {vendor} [built]
+  + [11] hiden modules
+
+$ vim src/foo.js
+  ...
+  console.log('add new console log')
+$ webpack --dislay-modules
+  vendor 没有变化
+  [0] ... {vendor} 模块属于哪个chunk
+  ...
+  [13] ... {main}
+  
+module显示名字
+$ vim webpack.config.js
+  new webpack.NamedChunksPlugin(),
+  new webpack.NamedModulesPlugin(),
+$ webpack --display-modules
+  [0] => [模块的相对路径]
+
+$ vim src/foo.js 修改源码
+$ webpack --display-modules
+  比较之前的哈希值
+
+```
+
+- 场景：动态引入模块时，vendor hash 变化
+- 解决：
+
+```sh
+$ vim src/async.js
+  export default {
+    name: 'async'
+  }
+$ vim src/foo.js
+  ...
+  // 动态引入模块
+  import('./async').then(function (a) {
+    cosnole.log(a)
+  })
+$ webpack --display-modules
+  0.........   0 异步加载模块id为0，没有chunk name
+  vendor 没有变化（老版本vendor会异步加载的模块时会hash值会变化，新版本已经解决此问题）
+
+解决：老版本
+  定义动态模块的 chunkname
+$ vim src/foo.js
+  import(/* webpackChunkName: 'async' */'./async').then(function (a){
+    console.log(a + '11')
+  })
+$ webpack --display-modules
+```
+
+- 总结：
+  - 独立打包 vendor
+  - 抽出 manifest (webpack runtime)
+  - 使用 NamedChunksPlugin
+  - 使用 NamedModulesPlugin
+  - 动态模块给定 模块名称
+
+## 多页面应用
+
+- PHP应用程序
+
+### 多页面应用特点
+
+- 多入口 entry
+- 多页面 html
+  - 每个页面不同的 chunk
+  - 每个页面不同的参数
+
+- 多配置：单页面单配置
+  - webpack 3.1.0
+  - parallel-webpack (parallel:平行, 并行处理webpack配置)
+  - 优点
+    - 可以使用parallel-webpack 来提高打包的速度
+    - 配置更加独立，灵活
+  - 缺点
+    - 不能多页面之间共享代码
+- 单配置：多页面单配置
