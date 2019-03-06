@@ -1,5 +1,17 @@
 # Webpack
 
+## 自动化构建
+
+>构建就是做这件事情，把源代码转换成发布到线上的可执行 JavaScript, CSS, HTML代码
+
+- 代码转换：ES6+编译成ES6、less 编译成css等
+- 文件优化：压缩js、css、htm 代码，压缩合并图片等
+- 代码分割：提取多个页面的公共代码、提取首屏不需要执行部分的代码让其异步加载
+- 模块合并：在采用模块化的项目里会有多个很多模块和文件，需要构建功能吧模块分类合并成一个文件
+- 自动刷新：监听本地源代码的变化，自动重新构建、刷新浏览器
+- 代码校验：在代码被提交到仓库前需要校验代码是否符合规范，以及单元测试是否通过
+- 自动发布：更新代码后，自动构建出线上发布代码并传输给发布系统
+
 ## --save-dev 与 --save 区别
 
 表面上的区别是`--save`会把依赖包名称添加到 package.json 文件 `dependencies` 键下，`--save-dev` 则添加到 package.json 文件 `devDependencies` 键下。
@@ -18,6 +30,10 @@
 - Pull request
 - Webpack
 - Instagram团队维护
+
+Webpack是一个打包模块化 JavaScript 工具，在 Webpack 里**一切文件皆模块**，通过 `loader` 转换文件，通过`plugin` 注入钩子，最后输出由多个模块组合成的文件。Webpack 专注于构建模块化项目
+
+一切文件：js、css、scss、图片和模板，在 Webpack 眼中都是一个模块，这样的好处是能清晰的描述出各个模块之间的依赖关系，以方便 Webpack 对模块进行组合和打包，经过 Webpack 的处理最终会输出浏览器能使用的静态资源。
 
 ### 为什么需要构建
 
@@ -76,7 +92,7 @@
 
 ### 版本迁移
 
-- v1 -> v2 
+- v1 -> v2
   - 迁移指南：https://webpack.js.org/guides/migrating/
   - 中文版：https://doc.webpack-china.org/guides/migrating/
 - v2 -> v2
@@ -152,8 +168,11 @@
     - 知乎：mac 下有哪些好用的命令行工具
 - node + npm
 - webpack
+  - 在使用 webpack 执行构建任务时需要通过 webpack 可执行文件去启动构建任务，所以需要安装 webpack 可执行文件
   - `npm install webapck -g`
   - [权限错误解决方案](http://npm.github.io/installation-setup-docs/installing/a-note-on-permissions.html)
+
+
 
 ## webpack 核心概念
 
