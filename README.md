@@ -25,6 +25,8 @@
 
 > I'ts funny story how I started with Webpack. Before getting addicted to JavaScript, I also developed in Java. I tried GWT(Google Web Toolkit) in that time. GWT is a Java-toJavaScript Compiler, which has a great feature: code-splitting. I liked this feature and missed it in existing JavaScript tooling. I made a pull reuqest to an existing moudle bundler, but it did not go through. Webpack was born.
 
+Webpack把离散的静态资源拼凑成适合线上环境运行的静态资源
+
 - Tobias Koppers (github: @sokra)
 - GWT (Google Web Toolkit) 代码分割
 - Pull request
@@ -34,6 +36,15 @@
 Webpack是一个打包模块化 JavaScript 工具，在 Webpack 里**一切文件皆模块**，通过 `loader` 转换文件，通过`plugin` 注入钩子，最后输出由多个模块组合成的文件。Webpack 专注于构建模块化项目
 
 一切文件：js、css、scss、图片和模板，在 Webpack 眼中都是一个模块，这样的好处是能清晰的描述出各个模块之间的依赖关系，以方便 Webpack 对模块进行组合和打包，经过 Webpack 的处理最终会输出浏览器能使用的静态资源。
+
+### webpack问题
+
+- 浏览器不能直接运行JSX，为什么用了webpack就可以？
+- 为什么在JS里可以require图片和CSS这些非JS内容？
+- 不刷新页面情况下展示刚刚修改的代码呢？
+- 如何生产环境代码优化到极致？
+
+- 初级前段工程师 ----- 项目组织、控制开发到上线流程 ------ 高级前段工程师
 
 ### 为什么需要构建
 
@@ -172,7 +183,13 @@ Webpack是一个打包模块化 JavaScript 工具，在 Webpack 里**一切文�
   - `npm install webapck -g`
   - [权限错误解决方案](http://npm.github.io/installation-setup-docs/installing/a-note-on-permissions.html)
 
+## webpack 安装
 
+- 全局安装
+  - `npm install webpack -g`
+- 本地安装
+  - `npm init -y`
+  - `npm install webpack webpack-cli -D` 开发依赖
 
 ## webpack 核心概念
 
@@ -5928,7 +5945,7 @@ $ vim src/foo.js
 $ webpack
   vendor.xxx1 react库没有变化
   main.xxx4 业务代码变化
-  manifest.xx5 重新打包，所有变化 
+  manifest.xx5 重新打包，所有变化
 ```
 
 另一个场景：引入新模块，模块顺序变化，vendor hash 变化
@@ -6036,3 +6053,24 @@ $ webpack --display-modules
   - 缺点
     - 不能多页面之间共享代码
 - 单配置：多页面单配置
+
+## webpack4
+
+```sh
+# npm init -y
+# npm install webpack webpack-cli -D
+# npm install -g npx
+v8.2+以上支持
+# npx webpack
+# npx webpack --mode development
+# npx webpack --mode production
+# mkdir -pv wvpack/bin
+# vim wvpack/bin/wvpack.js
+  #!/usr/bin/env node
+  console.log('js')
+# cd wvpack/bin
+# npm init -y
+# npm link
+# cd ../
+# npm install ejs
+```
