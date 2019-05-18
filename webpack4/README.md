@@ -77,3 +77,53 @@ yarn add react react-dom
 # sass-loader
 yarn add style-loader css-loader node-sass sass-loader -D
 ```
+
+### webpack plugins
+
+- [mini-css-extract-plugin](https://github.com/webpack-contrib/mini-css-extract-plugin) 插件对打包输出的文件中提取CSS内容输出到.css文件中
+
+```sh
+yarn add mini-css-extract-plugin -D
+```
+
+### definePlugin
+
+```js
+const webpack = require('webpack')
+...
+  plugins: [
+    new webpack.DefinePlugin({
+      'SERVICE_URL': JSON.stringify('http://www.wovert.com')
+    })
+  ],
+```
+
+### [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin)
+
+`yarn add html-webpack-plugin@next -D`
+
+### 热替换
+
+[webpack-dev-server](https://github.com/webpack/webpack-dev-server)
+
+```sh
+yarn add webpack-dev-server -D
+
+vim package.json
+  "start": "webpack-dev-server"
+```
+
+`yarn start` 命令会查找 `node_modules` 目录下查找
+
+### webpack 4 升级
+
+1. 先升级 webpack `yarn add webpack@^4 webpack-dev-server@latest -D`
+2. 安装 webpack-cli `yarn add webpack-cli@latest -D`
+3. 升级 html-webpack-plugin `yarn add html-webpack-plugin@latest -D`
+4. 升级 eslint-loader `yarn add eslint-loader@latest -D`
+5. 升级 vue-loader `yarn add vue-loader@latest -D`
+6. css 模块 `yarn add style-loader@latest  css-loader@latest postcss-loader@latest -D`
+7. Chunk.entrypoints: Use Chunks.groupsIterable and filter by instanceof Entrypoint instead
+升级 extract-text-webpack-plugin `yarn add extract-text-webpack-plugin@latest -D` 不好用
+升级 extract-text-webpack-plugin 开发版本 `yarn add extract-text-webpack-plugin@next -D`
+

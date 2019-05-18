@@ -1,4 +1,6 @@
-
+const webpack = require('webpack')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const path = require('path')
 
 // module.exports = {
@@ -20,6 +22,22 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].bundle.js'
   },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: '[name].css',
+      chunkFilename: '[id].css'
+    }),
+    new webpack.DefinePlugin({
+      'SERVICE_URL': JSON.stringify('http://www.wovert.com')
+    }),
+    new HtmlWebpackPlugin(),
+    new HtmlWebpackPlugin({  // Also generate a test.html
+      title: 'Good morning BJ',
+      filename: 'test.html',
+      template: './src/assets/test.html'
+    })
+
+  ],
   module: {
     rules: [
       {
@@ -48,9 +66,11 @@ module.exports = {
         test: /\.scss$/,
         use: [
           {
-            loader: 'style-loader',
+            // loader: 'style-loader',
+            loader: MiniCssExtractPlugin.loader,
             options: {
-              sourceMap: true
+              sourceMap: true,
+              hmr: process.env.NODE_ENV === 'development'
             }
           },
           {
@@ -68,5 +88,10 @@ module.exports = {
         ]
       }
     ]
+  },
+  devServer: {
+    contentBase: path.join(__dirname, 'dist'), // 必须与output.path 目录匹配
+    compress: true,
+    port: 8080
   }
 }
