@@ -61,6 +61,8 @@ webpack --mode production
 
 ### webpack loaders
 
+> 处理js以外的文件
+
 [全栈笔记](https://malun666.github.io/aicoder_vip_doc/#/)
 
 ```sh
@@ -76,6 +78,12 @@ yarn add react react-dom
 
 # sass-loader
 yarn add style-loader css-loader node-sass sass-loader -D
+
+浏览器前缀：
+  postcss-loader: 加载CSS版本样式
+  autoprefixer: 根据浏览器加载样式
+
+yarn add autoprefixer postcss-loader -D
 ```
 
 ### webpack plugins

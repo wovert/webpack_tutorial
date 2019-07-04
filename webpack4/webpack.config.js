@@ -80,7 +80,44 @@ module.exports = {
             }
           },
           {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          {
             loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.less$/,
+        use: [
+          {
+            // loader: 'style-loader',
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              sourceMap: true,
+              hmr: process.env.NODE_ENV === 'development'
+            }
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'less-loader',
             options: {
               sourceMap: true
             }
@@ -89,6 +126,7 @@ module.exports = {
       }
     ]
   },
+  devtool: 'source-map',
   devServer: {
     contentBase: path.join(__dirname, 'dist'), // 必须与output.path 目录匹配
     compress: true,

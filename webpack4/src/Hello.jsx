@@ -5,6 +5,7 @@ export default class Hello extends Component {
     return (
       <div>
         <h1>Hello Component12136</h1>
+        <div id="box">box</div>
       </div>
     )
   }

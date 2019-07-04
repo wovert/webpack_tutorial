@@ -4,6 +4,7 @@ import Hello from './Hello.jsx'
 import file from './assets/imgs/file.png'
 import fileFolder from './assets/imgs/file-folder.png'
 import './about.scss'
+import './about.less'
 
 const about = function () {
   async function getInfo() {
